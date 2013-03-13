@@ -1,6 +1,8 @@
-*.class
 
-# Package Files #
-*.jar
-*.war
-*.ear
+examples/phonegap/bin/
+examples/phonegap/target
+examples/webview/bin/
+examples/webview/target
+jshybugger-lib/target
+examples/webview/gen/
+examples/phonegap/gen/
