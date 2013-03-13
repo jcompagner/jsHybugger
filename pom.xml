@@ -26,7 +26,7 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>	
-        <platform.version>2.3.3</platform.version>		<server_schema>http</server_schema>
+        <platform.version>10</platform.version>		<server_schema>http</server_schema>
 	</properties>
 
 	<modules>
@@ -36,7 +36,8 @@
 
 	<dependencyManagement>
 		<dependencies>
-			<dependency>				<groupId>com.google.android</groupId>				<artifactId>android</artifactId>				<version>${platform.version}</version>				<scope>provided</scope>				<exclusions>
+			<dependency>				<groupId>com.google.android</groupId>				<artifactId>android</artifactId>				<version>${platform.version}</version>				<scope>system</scope>
+				<systemPath>${env.ANDROID_HOME}/platforms/android-${platform.version}/android.jar</systemPath>				<exclusions>
 					<exclusion>
 						<groupId>org.json</groupId>
 						<artifactId>json</artifactId>
@@ -66,7 +67,7 @@
 					</configuration>
 				</plugin>
 				
-				<plugin>					<groupId>com.jayway.maven.plugins.android.generation2</groupId>					<artifactId>android-maven-plugin</artifactId>					<version>3.5.1</version>					<configuration>						<androidManifestFile>${project.basedir}/AndroidManifest.xml</androidManifestFile>						<assetsDirectory>${project.basedir}/assets</assetsDirectory>						<resourceDirectory>${project.basedir}/res</resourceDirectory>						<sdk>							<platform>15</platform>						</sdk>						<undeployBeforeDeploy>false</undeployBeforeDeploy>					</configuration>					<extensions>true</extensions>				</plugin>				<!--This plugin's configuration is used to store Eclipse m2e settings 
+				<plugin>					<groupId>com.jayway.maven.plugins.android.generation2</groupId>					<artifactId>android-maven-plugin</artifactId>					<version>3.5.1</version>					<configuration>						<androidManifestFile>${project.basedir}/AndroidManifest.xml</androidManifestFile>						<assetsDirectory>${project.basedir}/assets</assetsDirectory>						<resourceDirectory>${project.basedir}/res</resourceDirectory>						<sdk>							<platform>${platform.version}</platform>						</sdk>						<undeployBeforeDeploy>false</undeployBeforeDeploy>					</configuration>					<extensions>true</extensions>				</plugin>				<!--This plugin's configuration is used to store Eclipse m2e settings 
 					only. It has no influence on the Maven build itself. -->
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
