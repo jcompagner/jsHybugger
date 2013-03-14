@@ -13,9 +13,9 @@ javascript and html files. Javascript files which filename ends with ".min.js" w
 
 Let's start with the WebView example. 
 
-You can build the example using maven or you can just download the example [APK](jshybugger.org/download/jshybugger-webview-ex.apk) and start debugging (skip building section).
+You can build the example using maven or you can just download the example [APK](http://jshybugger.org/download/jshybugger-webview-ex.apk) and start debugging (skip building section).
 
-# building example APK file
+# building example APK
 Go to jsHybugger/examples/webview and enter the following commands (see Maven-Build section for more info)
 
 	mvn clean install
@@ -39,7 +39,7 @@ You should now see the chrome webinspector and your loaded javascripts. Let's se
 
 Now the details how to enable the debugging feature for your app.
 
-1.  Add jshybugger-bundle/target/jshybugger-lib-1.0.0-SNAPSHOT_bundle.jar [download](jshybugger.org/download/jshybugger-bundle-1.0.0-SNAPSHOT_bundle) file to your libs directory
+1.  Add jshybugger-bundle/target/jshybugger-lib-1.0.0-SNAPSHOT_bundle.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.0.0-SNAPSHOT_bundle)) file to your libs directory
 
 2.	enhance AndroidManifest.xml
 
