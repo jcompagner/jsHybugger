@@ -22,12 +22,12 @@ Let's start with the WebView example.
 
 Now you have two options to connect your chrome browser with your mobile device
 
-	a. use ADB tool and forward TCP port: 
+1. use ADB tool and forward TCP port: 
 	
 		adb forward tcp:8888 tcp:8888
 		chrome browser: http://localhost:8888
 
-	b. directly connect to your smartphones IP address
+2. directly connect to your smartphones IP address
 		chrome browser: http://<phone ip>:8888
 		
 You should now see the chrome webinspector and your loaded javascripts. Let's set a breakpoint on line 32 and click the calculate button in the example. If everythings works, your debugger should stop automatically on the breakpoint.
