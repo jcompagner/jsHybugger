@@ -11,11 +11,11 @@ How does it work?
 jsHybugger will intercept all resource requests from your webview, and will do an on-the-fly instrumentation of your 
 javascript and html files. Javascript files which filename ends with ".min.js" will not be instrumented and therefor not debug-able. If you use the non minified version of large libraries i.e. jquery, it's important to start the app on the first run (with jsHybugger) not in debug mode. The instrumentation will take some time (jquery about 10sec.), the instrumented files are stored in a cache and are used at next startup. File changes are detected automatically and will trigger an re-instrumentation of the file. jsHybugger will automatically starts an WebSocket-Server on port 8888 on your device. You must use a "Chrome Browser" on your notebook/desktop to access the debugging service on your smartphone. The URL you will find a few lines further down in the text.
 
-Let's start with the WebView example. 
+Let's start with an example. 
 
-You can build the example using maven or you can just download the example [APK](http://jshybugger.org/download/jshybugger-webview-ex.apk) and start debugging (skip building section).
+# Example Android App
+You can build the example using maven or you can just download the example [APK](http://jshybugger.org/download/jshybugger-webview-ex.apk) and start debugging (skip next lines and continue reading with "Connect chrome browser to mobile device").
 
-# building example APK
 Go to jsHybugger/examples/webview and enter the following commands (see Maven-Build section for more info)
 
 	mvn clean install
@@ -37,7 +37,7 @@ Go to jsHybugger/examples/webview and enter the following commands (see Maven-Bu
 You should now see the chrome webinspector and your loaded javascripts. Let's set a breakpoint on line 32 and click the calculate button in the example. If everythings works, your debugger should stop automatically on the breakpoint.
 
 
-# Integrate jsHybugger into your app.
+# Integrate jsHybugger into your app
 
 1.  Add jshybugger-bundle/target/jshybugger-lib-1.0.0-SNAPSHOT_bundle.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.0.0-SNAPSHOT_bundle.jar)) file to your libs directory
 
