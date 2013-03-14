@@ -6,3 +6,4 @@ examples/webview/target
 jshybugger-lib/target
 examples/webview/gen/
 examples/phonegap/gen/
+jshybugger-bundle/target/
