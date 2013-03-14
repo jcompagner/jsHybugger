@@ -14,11 +14,11 @@ javascript and html files. Javascript files which filename ends with ".min.js" w
 Let's start with the WebView example. 
 
 # build example apk file
-Go to jsHybugger/examples/webview and enter the following commands
-mvn clean install
+	Go to jsHybugger/examples/webview and enter the following commands:
+	mvn clean install
 
 # install APK file on device and start it
-mvn android:deploy android:run
+	mvn android:deploy android:run
 
 Now you have two options to connect your chrome browser with your mobile device
 
@@ -37,7 +37,7 @@ Now the details how to enable the debugging feature for your app.
 
 1.  Add jshybugger-bundle/target/jshybugger-lib-1.0.0-SNAPSHOT_bundle.jar file to your libs directory
 
-2.	AndroidManifest.xml ergänzen
+2.	enhance AndroidManifest.xml
 
 	<!-- JsHybugger needs network access -->
 	<uses-permission android:name="android.permission.INTERNET" />
