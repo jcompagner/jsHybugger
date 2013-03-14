@@ -39,7 +39,7 @@ You should now see the chrome webinspector and your loaded javascripts. Let's se
 
 Now the details how to enable the debugging feature for your app.
 
-1.  Add jshybugger-bundle/target/jshybugger-lib-1.0.0-SNAPSHOT_bundle.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.0.0-SNAPSHOT_bundle)) file to your libs directory
+1.  Add jshybugger-bundle/target/jshybugger-lib-1.0.0-SNAPSHOT_bundle.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.0.0-SNAPSHOT_bundle.jar)) file to your libs directory
 
 2.	enhance AndroidManifest.xml
 
