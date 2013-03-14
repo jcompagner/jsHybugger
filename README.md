@@ -1,15 +1,15 @@
 jsHybugger - Javascript debugger for Android WebView
 ====================================================
 
-Maybe you already know how easy it is to debug web pages on your Android device with Google Chrome and the Remote Debugging feature. But how to debug a web page which runs inside a native app within a webview component? Maybe you would say now, use jConsole or Weinre or .... YES these are all great tools, but what tool offer you real javascript debugging like the chrome webinspector? Now jsHybugger comes to play :-) 
+Maybe you already know how easy it is to debug web pages on your Android device with Google Chrome and the Remote Debugging feature. But how to debug a web page which runs inside a native app within a webview component? Perhaps you would say, use jConsole or Weinre and co ... YES these are all great tools, but which tool offer you real javascript debugging like the chrome webinspector? Now jsHybugger comes to play :-) 
 
-jsHybugger is a debugging service which you can easily integrate in your existing Android App, and which will enable
+jsHybugger is a debugging service which you can easily integrate into your existing Android App to enable
 javascript debugging for webview components inside your app. You can even debug PhoneGap apps.
 
 How does it work?
 
 jsHybugger will intercept all resource requests from your webview, and will do an on-the-fly instrumentation of your 
-javascript and html files. Javascript files which filename ends with ".min.js" will not be instrumented and therefor not debug-able. If you use the non minified version of large libraries i.e. jquery, it's important to start the app on the first run (with jsHybugger) not in debug mode. The instrumentation will take some time (jquery about 10sec.), the instrumented files are stored in a cache and are used at next startup. File changes are detected automatically and will trigger an re-instrumentation of the file. jsHybugger will automatically starts an WebSocket-Server on port 8888 on your device. You must use a "Chrome Browser" on your notebook/desktop to access the debugging service on your smartphone. The URL you will find a few lines further down in the text.
+javascript and html files. Javascript files, with the extension ".min.js" will not be instrumented and therefor not debug-able. If you use the non minified version of large libraries i.e. jquery, it's important to start the app on the first run (with jsHybugger) not in debug mode. The instrumentation will take some time (jquery about 10sec.), the instrumented files are stored in a cache and are used at next startup. File changes are detected automatically and will trigger an re-instrumentation of the file. jsHybugger will automatically starts a WebSocket-Server on port 8888 on your device. You must use a "Chrome Browser" on your notebook/desktop to access the debugging service on your smartphone. The URL will follow later in this text.
 
 Let's start with an example. 
 
@@ -56,11 +56,11 @@ You should now see the chrome webinspector and your loaded javascripts. Let's se
 				 android:exported="false"
 				 android:enabled="true"/>
 
-3. Connect WebView with Debugging-Service and prefix the url with content://jsHybugger.com/ 
+3. Connect WebView with Debugging-Service and prefix the url with content://jsHybugger.org/ 
 
 		// attach web view to debugging service 
 		DebugServiceClient.attachWebView(webView, this);
-		webView.loadUrl("content://jsHybugger.com/file:///android_asset/www/index.html");
+		webView.loadUrl("content://jsHybugger.org/file:///android_asset/www/index.html");
 			 
 5. Ready to launch your app on the phone! 
 
@@ -70,7 +70,7 @@ You should now see the chrome webinspector and your loaded javascripts. Let's se
 Maven Build
 ===========
 
-1. Make sure that ANDROID_HOME environment variable is set and points to your SDK installation.
+1. Make sure that the ANDROID_HOME environment variable is set and refers to your SDK installation.
 
 2. For the PhoneGap example you must first download and install the cordova library to your local maven repository.
 
