@@ -32,19 +32,6 @@
 		<environment>development</environment>
 	</properties>
 
-	<dependencies>
-		<dependency>
-			<groupId>org.jshybugger</groupId>
-			<artifactId>jshybugger-lib</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.android</groupId>
-			<artifactId>android</artifactId>
-			<scope>system</scope>
-		</dependency>
-	</dependencies>
-
 	<build>
 		<finalName>${project.artifactId}</finalName>
 

@@ -143,13 +143,13 @@ public class DebugService extends Service {
 			        method.invoke(webView.getSettings(), true);
 			    }
 			} catch (NoSuchMethodException e) {
-				Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
+				//Log.d(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
 			} catch (IllegalArgumentException e) {
-				Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
+				//Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
 			} catch (IllegalAccessException e) {
-				Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
+				//Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
 			} catch (InvocationTargetException e) {
-				Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
+				//Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
 			}
 		}		
 		notifyHandlers(Message.obtain(null, MSG_WEBVIEW_ATTACHED));

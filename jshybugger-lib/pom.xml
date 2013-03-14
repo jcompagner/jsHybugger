@@ -30,9 +30,18 @@
 
     <dependencies>
 		<dependency>
-            <groupId>com.google.android</groupId>
-            <artifactId>android</artifactId>
-        </dependency>
+			<groupId>com.google.android</groupId>
+			<artifactId>android</artifactId>
+			<version>${platform.version}</version>
+			<scope>system</scope>
+			<systemPath>${env.ANDROID_HOME}/platforms/android-${platform.version}/android.jar</systemPath>
+			<exclusions>
+				<exclusion>
+					<groupId>org.json</groupId>
+					<artifactId>json</artifactId>
+				</exclusion>						
+			</exclusions>
+		</dependency>	
 		<dependency>
 			<groupId>org.mozilla</groupId>
 			<artifactId>rhino</artifactId>

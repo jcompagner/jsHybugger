@@ -37,14 +37,7 @@
 
 	<dependencyManagement>
 		<dependencies>
-			<dependency>				<groupId>com.google.android</groupId>				<artifactId>android</artifactId>				<version>${platform.version}</version>				<scope>system</scope>
-				<systemPath>${env.ANDROID_HOME}/platforms/android-${platform.version}/android.jar</systemPath>				<exclusions>
-					<exclusion>
-						<groupId>org.json</groupId>
-						<artifactId>json</artifactId>
-					</exclusion>						
-				</exclusions>
-			</dependency>					<dependency>				<groupId>org.mozilla</groupId>				<artifactId>rhino</artifactId>				<version>1.7R4</version>			</dependency>			<dependency>				<groupId>org.webbitserver</groupId>				<artifactId>webbit</artifactId>				<version>0.4.14</version>			</dependency>			<dependency>				<groupId>io.netty</groupId>				<artifactId>netty</artifactId>				<version>3.6.3.Final</version>			</dependency>
+			<dependency>				<groupId>org.mozilla</groupId>				<artifactId>rhino</artifactId>				<version>1.7R4</version>			</dependency>			<dependency>				<groupId>org.webbitserver</groupId>				<artifactId>webbit</artifactId>				<version>0.4.14</version>			</dependency>			<dependency>				<groupId>io.netty</groupId>				<artifactId>netty</artifactId>				<version>3.6.3.Final</version>			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	

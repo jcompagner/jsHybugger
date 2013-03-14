@@ -33,4 +33,36 @@
 		<module>webview</module>
 	</modules>
 	
+	<dependencies>
+		<dependency>
+			<groupId>org.jshybugger</groupId>
+			<artifactId>jshybugger-lib</artifactId>
+			<version>${project.version}</version>
+			<!-- exclusions>
+				<exclusion>
+					<groupId>com.google.android</groupId>
+					<artifactId>android</artifactId>
+				</exclusion>						
+			</exclusions -->
+		</dependency>
+	</dependencies>
+	
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<dependencies>
+						<dependency>
+							<groupId>org.jshybugger</groupId>
+							<artifactId>jshybugger-lib</artifactId>
+							<version>${project.version}</version>
+						</dependency>
+					</dependencies>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+	
 </project>
