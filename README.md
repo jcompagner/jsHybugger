@@ -14,7 +14,8 @@ javascript and html files. Javascript files which filename ends with ".min.js" w
 Let's start with the WebView example. 
 
 # build example apk file
-Go to jsHybugger/examples/webview and enter the following commands:
+Go to jsHybugger/examples/webview and enter the following commands (see Maven-Build section for more info)
+
 	mvn clean install
 
 # install APK file on device and start it
