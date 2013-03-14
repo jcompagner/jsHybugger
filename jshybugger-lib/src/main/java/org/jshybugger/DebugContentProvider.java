@@ -84,7 +84,7 @@ public class DebugContentProvider extends ContentProvider {
 				// check if the js file is already instrumented and can be immediately returned
 				loadUrl = getInstrumentedFileName(url);
 				File loadUrlFd = new File(getContext().getFilesDir(), loadUrl);
-				if (loadUrlFd.exists() && !loadUrl.contains("angular.js")) {
+				if (loadUrlFd.exists()) {
 					return ParcelFileDescriptor.open(loadUrlFd, ParcelFileDescriptor.MODE_READ_ONLY);
 				}
 				
