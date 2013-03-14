@@ -39,24 +39,24 @@ Now the details how to enable the debugging feature for your app.
 
 2.	enhance AndroidManifest.xml
 
-	<!-- JsHybugger needs network access -->
-	<uses-permission android:name="android.permission.INTERNET" />
+		<!-- JsHybugger needs network access -->
+		<uses-permission android:name="android.permission.INTERNET" />
 
-	<!--  JSHybugger webview content provider -->
-	<provider android:name="org.jshybugger.DebugContentProvider"
-			  android:exported="false"
-			  android:authorities="jsHybugger.org" />
-      
-	<!--  JSHybugger debug service -->
-	<service android:name="org.jshybugger.DebugService"
-             android:exported="false"
-             android:enabled="true"/>
+		<!--  JSHybugger webview content provider -->
+		<provider android:name="org.jshybugger.DebugContentProvider"
+				  android:exported="false"
+				  android:authorities="jsHybugger.org" />
+		  
+		<!--  JSHybugger debug service -->
+		<service android:name="org.jshybugger.DebugService"
+				 android:exported="false"
+				 android:enabled="true"/>
 
 3. Connect WebView with Debugging-Service and prefix the url with content://jsHybugger.com/ 
 
-	// attach web view to debugging service 
-	DebugServiceClient.attachWebView(webView, this);
-	webView.loadUrl("content://jsHybugger.com/file:///android_asset/www/index.html");
+		// attach web view to debugging service 
+		DebugServiceClient.attachWebView(webView, this);
+		webView.loadUrl("content://jsHybugger.com/file:///android_asset/www/index.html");
 			 
 5. Ready to launch your app on the phone! 
 
