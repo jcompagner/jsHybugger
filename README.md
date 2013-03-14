@@ -1,5 +1,5 @@
-jsHybugger - Javascript debugger for Android WebView
-====================================================
+jsHybugger - Javascript Debugger for Android WebViews
+=====================================================
 
 Maybe you already know how easy it is to debug web pages on your Android device with Google Chrome and the Remote Debugging feature. But how to debug a web page which runs inside a native app within a webview component? Perhaps you would say, use jConsole or Weinre and co ... YES these are all great tools, but which tool offer you real javascript debugging like the chrome webinspector? Now jsHybugger comes to play :-) 
 
@@ -74,6 +74,6 @@ Maven Build
 
 2. For the PhoneGap example you must first download and install the cordova library to your local maven repository.
 
-mvn install:install-file -DgroupId=org.apache.cordova -DartifactId=cordova -Dversion=2.2.0 -Dfile=<path to downloaded cordova-2.2.0.jar file> -Dpackaging=jar
+	mvn install:install-file -DgroupId=org.apache.cordova -DartifactId=cordova -Dversion=2.2.0 -Dfile=<path to downloaded cordova-2.2.0.jar file> -Dpackaging=jar
 
 3. Build the complete system with the following command: mvn clean install 
