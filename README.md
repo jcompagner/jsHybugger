@@ -14,7 +14,7 @@ javascript and html files. Javascript files which filename ends with ".min.js" w
 Let's start with the WebView example. 
 
 # build example apk file
-	Go to jsHybugger/examples/webview and enter the following commands:
+Go to jsHybugger/examples/webview and enter the following commands:
 	mvn clean install
 
 # install APK file on device and start it
@@ -28,6 +28,7 @@ Now you have two options to connect your chrome browser with your mobile device
 		chrome browser: http://localhost:8888
 
 2. directly connect to your smartphones IP address
+
 		chrome browser: http://<phone ip>:8888
 		
 You should now see the chrome webinspector and your loaded javascripts. Let's set a breakpoint on line 32 and click the calculate button in the example. If everythings works, your debugger should stop automatically on the breakpoint.
