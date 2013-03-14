@@ -37,7 +37,7 @@ Go to jsHybugger/examples/webview and enter the following commands (see Maven-Bu
 You should now see the chrome webinspector and your loaded javascripts. Let's set a breakpoint on line 32 and click the calculate button in the example. If everythings works, your debugger should stop automatically on the breakpoint.
 
 
-Now the details how to enable the debugging feature for your app.
+# Integrate jsHybugger into your app.
 
 1.  Add jshybugger-bundle/target/jshybugger-lib-1.0.0-SNAPSHOT_bundle.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.0.0-SNAPSHOT_bundle.jar)) file to your libs directory
 
@@ -64,21 +64,8 @@ Now the details how to enable the debugging feature for your app.
 			 
 5. Ready to launch your app on the phone! 
 
-6. Start debugging frontend (Chrome Browser)
+6. Start debugging frontend (Chrome Browser) - see section "Connect chrome browser to mobile device"
 
-7. Now you have two options to connect your chrome browser with your mobile device
-
-	a. use ADB tool and forward TCP port: 
-	
-		adb forward tcp:8888 tcp:8888
-		chrome browser: http://localhost:8888
-
-	b. directly connect to your smartphones IP address
-		chrome browser: http://<phone ip>:8888
-		
-8. If everything works, you should now see the chrome webinspector and your loaded javascripts.
-		
-	
 	
 Maven Build
 ===========
