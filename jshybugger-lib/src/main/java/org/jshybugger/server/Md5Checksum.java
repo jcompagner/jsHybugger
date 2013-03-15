@@ -43,7 +43,6 @@ public class Md5Checksum {
 			}
 		} while (numRead != -1);
 
-		fis.close();
 		return complete.digest();
 	}
 

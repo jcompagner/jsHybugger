@@ -75,66 +75,73 @@ public class DebugContentProvider extends ContentProvider {
 		}
 		
         String url = uri.getPath().substring(1);
+		String loadUrl = null;
         
-        // instrument js files, except jshybugger and minified javascript resources
-		if (!url.endsWith(".min.js") && !url.endsWith("jshybugger.js") && url.endsWith(".js")) {
-			
-			String loadUrl;
-			try {
+		try {
+			// get original source
+			InputResource resource = openInputFile(url);
+
+			if (resource.isJs()) {
 				// check if the js file is already instrumented and can be immediately returned
-				loadUrl = getInstrumentedFileName(url);
-				File loadUrlFd = new File(getContext().getFilesDir(), loadUrl);
-				if (loadUrlFd.exists()) {
-					return ParcelFileDescriptor.open(loadUrlFd, ParcelFileDescriptor.MODE_READ_ONLY);
+				loadUrl = getInstrumentedFileName(url, resource);
+				if (loadUrl != null) {
+					File loadUrlFd = new File(getContext().getFilesDir(), loadUrl);
+					if (loadUrlFd.exists()) {
+						resource.getInputSream().close();
+						return ParcelFileDescriptor.open(loadUrlFd, ParcelFileDescriptor.MODE_READ_ONLY);
+					}
 				}
 				
-				// get original js source
-				BufferedInputStream resource = openInputFile(url).getInputSream();
+				// ensure that stream is still open 
+				try {
+					resource.getInputSream().reset();
+				} catch (IOException ioe) {
+					resource = openInputFile(url);
+				}
+			}
+			
+			
+			if (url.endsWith("jshybugger.js")) {
+				ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
 				
+				new TransferThread(resource.getInputSream(), new AutoCloseOutputStream(
+						pipe[1]), false).start();
+				
+				return pipe[0];
+				
+			} else if (resource.isJs() && !url.endsWith(".min.js")) {
 				// instrument js code
 				FileOutputStream outputStream = getContext().openFileOutput(loadUrl, Context.MODE_PRIVATE);
 				try {
-					JsCodeLoader.instrumentFile(resource, url, outputStream);
+					JsCodeLoader.instrumentFile(resource.getInputSream(), url, outputStream);
 				} catch (IOException e) {
-					// delete maybe partially instrumented file.
+			        Log.d(TAG, "instrumenting file failed: " + uri, e);
+
+			        // delete file - maybe partially instrumented file.
 					getContext().deleteFile(loadUrl);
 				} finally {
-					resource.close();
+					resource.getInputSream().close();
 				}
 				
 				// return instrumented js code
-				loadUrlFd = new File(getContext().getFilesDir(), loadUrl);
+				File loadUrlFd = new File(getContext().getFilesDir(), loadUrl);
 				return ParcelFileDescriptor.open(loadUrlFd, ParcelFileDescriptor.MODE_READ_ONLY);
-				
-			} catch (IOException e) {
-		        Log.e(TAG, "file open for instrumentation failed: " + e);
-			}
-
-		} else {
-			try {
-				// return non js resource
+			} else {
+		        Log.d(TAG, "loading file: " + uri);
 				ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
 				
-				InputStream inputStream = null;
-				boolean isHTML = false;
-				if (url.endsWith("jshybugger.js")) {
-					inputStream = getClass().getClassLoader().getResourceAsStream("jshybugger.js");
-					
-				} else {
-			        Log.d(TAG, "loading file: " + uri);
-					InputResource inpRes = openInputFile(url);
-					isHTML = inpRes.isHtml();
-					inputStream = inpRes.getInputSream();
-				}
+				InputStream inputStream = resource.getInputSream();
 
 				new TransferThread(inputStream, new AutoCloseOutputStream(
-						pipe[1]), isHTML).start();
+						pipe[1]), resource.isHtml()).start();
 				
 				return pipe[0];
-			} catch (IOException e) {
-				Log.e(TAG, "file open failed: " + e);
 			}
+			
+		} catch (IOException e) {
+	        Log.e(TAG, "file open failed: " + e);
 		}
+
 		return null;
     }
 
@@ -147,7 +154,14 @@ public class DebugContentProvider extends ContentProvider {
 	 */
 	private InputResource openInputFile(String url) throws IOException {
 
-        if (url.startsWith(ANDROID_ASSET_URL)) {   // Must be a local file
+		if (url.endsWith("jshybugger.js")) {
+			
+        	return new InputResource(
+        			false,  // don't mark it as js resource, because we don't want instrumentation for this file 
+        			false, 
+        			new BufferedInputStream(getClass().getClassLoader().getResourceAsStream("jshybugger.js")));
+			
+		} else if (url.startsWith(ANDROID_ASSET_URL)) {   // Must be a local file
         	url = url.substring(ANDROID_ASSET_URL.length());
 
         	return new InputResource(
@@ -168,9 +182,12 @@ public class DebugContentProvider extends ContentProvider {
         	urlConnection.connect();
         	
         	String contentType = urlConnection.getContentType();
-			Log.d(TAG, "open stream type: " + contentType);
+			Log.d(TAG, url +  ", type: " + contentType);
 			return new InputResource(
-					contentType.contains("application/javascript"),
+					url.endsWith(".js") ||
+					contentType.contains("application/x-javascript") || 
+					contentType.contains("text/javascript") ||
+					contentType.contains("text/x-js"),
 					contentType.contains("text/html"), 
 					new BufferedInputStream(urlConnection.getInputStream()));
         }
@@ -180,18 +197,20 @@ public class DebugContentProvider extends ContentProvider {
 	 * Gets the instrumented file name.
 	 *
 	 * @param url the url to instrument
+	 * @param resource resource input stream
 	 * @return the instrument file name
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	private String getInstrumentedFileName(String url) throws IOException {
+	private String getInstrumentedFileName(String url, InputResource resource) throws IOException {
 		String loadUrl = null;
-		InputStream resource = openInputFile(url).getInputSream();
-		try {
-			loadUrl = url.replaceAll("[/]", "_") + "Hybugger_" + Md5Checksum.getMD5Checksum(resource);
-		} catch (Exception e) {
-			Log.e(TAG, "getInstrumentedFileName failed:" + url, e);
-		} finally {
-			resource.close();
+		if (resource.isJs()) {
+			try {
+				resource.getInputSream().mark(1000000);
+				loadUrl = url.replaceAll("[/:?=]", "_") + Md5Checksum.getMD5Checksum(resource.getInputSream());
+				
+			} catch (Exception e) {
+				Log.e(TAG, "getInstrumentedFileName failed:" + url, e);
+			} 
 		}
 		return loadUrl;
 	}	
