@@ -99,7 +99,7 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 		} else if ("setBreakpointByUrl".equals(method)) {
 			
 			JSONObject params = message.getJSONObject("params");
-			setBreakpointByUrl(conn, params.getInt("id"), params.getString("url"), params.getInt("lineNumber"), false);
+			setBreakpointByUrl(conn, message.getInt("id"), params.getString("url"), params.getInt("lineNumber"), false);
 			
 		} else if ("setBreakpoint".equals(method)) {
 
