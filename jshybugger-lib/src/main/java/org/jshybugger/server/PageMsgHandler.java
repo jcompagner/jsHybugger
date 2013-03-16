@@ -65,6 +65,12 @@ public class PageMsgHandler extends AbstractMsgHandler {
 					"breakpoint-resume",
 					new JSONObject(), null);
 			
+		} else if ("getResourceTree".equals(method)) {
+
+			// forward message to debug handler for processing
+			debugServer.getMessageHandler(DebuggerMsgHandler.HANDLER_NAME)
+					.onSendMessage(conn, "getResourceTree", message);
+
 		} else if ("reload".equals(method)) {
 			
 			pageReload(conn, message);

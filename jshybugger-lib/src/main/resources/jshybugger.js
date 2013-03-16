@@ -149,20 +149,23 @@ window.JsHybugger = (function() {
 	            case 'breakpoint-resume':
 	        		return runSafe(function() {
 	        			shouldBreak = function() { return false; };
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ }));
 	        		}, false);
 	            
 	            case 'breakpoint-step-over':
 	        		return runSafe(function() {
 		                shouldBreak = (function(oldDepth) {
 		                    return function(depth) {
-		                        return depth == oldDepth;
+		                        return depth <= oldDepth;
 		                    };
 		                })(callStackDepth);
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ }));
 	        		}, false);
 	
 	            case 'breakpoint-step-into':
 	        		return runSafe(function() {
 	        			shouldBreak = function() { return true; };
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ }));
 	        		}, false);
 	                
 	            case 'breakpoint-step-out':
@@ -172,17 +175,9 @@ window.JsHybugger = (function() {
 		                        return depth < oldDepth;
 		                    };
 		                })(callStackDepth);
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ }));
 	        		}, false);
 	                
-	            case 'breakpoint-step-over':
-	        		return runSafe(function() {
-		                shouldBreak = (function(oldDepth) {
-		                    return function(depth) {
-		                        return depth <= oldDepth;
-		                    };
-		                })(callStackDepth);
-	        		}, false);
-	
 	            case 'page-reload':
 	            	return runSafe(function() {
 	        			shouldBreak = function() { return false; };

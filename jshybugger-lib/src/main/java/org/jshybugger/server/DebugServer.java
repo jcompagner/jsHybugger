@@ -105,6 +105,32 @@ public class DebugServer extends BaseWebSocketHandler {
 	                        response.status(301).header("Location", "http://chrome-devtools-frontend.appspot.com/static/18.0.1025.166/devtools.html?host=" + request.header("Host") + "&page=1").end();
 	                    }
 	                })
+	                .add("/json", new HttpHandler() {
+	                    @Override
+	                    public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) {
+	                    	try {
+								String res = new JSONStringer().array().object()
+								
+										.key("devtoolsFrontendUrl").value("http://chrome-devtools-frontend.appspot.com/static/18.0.1025.166/devtools.html?host=" + request.header("Host") + "&page=1")
+										.key("faviconUrl").value("http://www.google.de/favicon.ico")
+									    .key("thumbnailUrl").value("/thumb/")
+									    .key("title").value("jsHybugger powered debugging")
+									    .key("url").value("http://localhost/")
+									    .key("webSocketDebuggerUrl").value("ws://" + request.header("Host") + "/devtools/page/1")
+									    
+									 .endObject().endArray().toString();
+								
+								
+								response.header("Content-type", "application/json")
+									.content(res)
+									.end();
+								
+							} catch (JSONException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+	                    }
+	                })
 	                .add("/devtools/page/1", DebugServer.this);
 				
 		        webServer.start();
@@ -201,6 +227,16 @@ public class DebugServer extends BaseWebSocketHandler {
 		} else {
 			Log.e(TAG, "sendMessage no handler found: " + handlerMethod);
 		}
+	}
+	
+	/**
+	 * Gets the message handler by name.
+	 *
+	 * @param handlerName the handler name
+	 * @return the message handler
+	 */
+	public MessageHandler getMessageHandler(String handlerName) {
+		return HANDLERS.get(handlerName);
 	}
 
 	/**

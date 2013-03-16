@@ -44,13 +44,15 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 	/** The script breakpoints. */
 	private Map<String,List<Integer>> scriptBreakpoints =  new HashMap<String,List<Integer>>();
 	
+	public final static String HANDLER_NAME = "Debugger";
+	
 	/**
 	 * Instantiates a new debugger msg handler.
 	 *
 	 * @param debugServer the debug server
 	 */
 	public DebuggerMsgHandler(DebugServer debugServer) {
-		super(debugServer, "Debugger");
+		super(debugServer, HANDLER_NAME);
 
 		METHODS_AVAILABLE.put("causesRecompilation", false);
 		METHODS_AVAILABLE.put("supportsNativeBreakpoints", false);
@@ -62,7 +64,7 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 	 * @see de.cyberflohrs.jshybugger.server.AbstractMsgHandler#onReceiveMessage(org.webbitserver.WebSocketConnection, java.lang.String, org.json.JSONObject)
 	 */
 	@Override
-	public void onReceiveMessage(WebSocketConnection conn, String method, JSONObject message) throws JSONException {
+	public void onReceiveMessage(final WebSocketConnection conn, String method, final JSONObject message) throws JSONException {
 		
 		if (METHODS_AVAILABLE.containsKey(method)) {
 			
@@ -71,7 +73,7 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			reply.put("id", message.getInt("id"));
 			reply.put("result", new JSONObject().put("result", METHODS_AVAILABLE.get(method)));
 			
-			if("canSetScriptSource".equals(method)) {
+			if("enable".equals(method)) {
 				for (Entry<String,Integer> entry : loadedScripts.entrySet()) {
 					sendScriptParsed(conn, entry.getKey(), entry.getValue());
 				}
@@ -96,13 +98,20 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			
 		} else if ("setBreakpointByUrl".equals(method)) {
 			
-			setBreakpointByUrl(conn, message);
+			JSONObject params = message.getJSONObject("params");
+			setBreakpointByUrl(conn, params.getInt("id"), params.getString("url"), params.getInt("lineNumber"), false);
+			
+		} else if ("setBreakpoint".equals(method)) {
+
+			JSONObject params = message.getJSONObject("params");
+			setBreakpointByUrl(conn, message.getInt("id"), params.getJSONObject("location").getString("scriptId"), params.getJSONObject("location").getInt("lineNumber"), true);
 			
 		} else if ("removeBreakpoint".equals(method)) {
 			
 			removeBreakpoint(conn, message);
 			
-		} else if (method.equals("setPauseOnExceptions")) {
+		} else if (method.equals("setPauseOnExceptions") ||
+				method.equals("setBreakpointsActive")) {
 			
 			conn.send(new JSONStringer().object()
 					.key("id").value(message.getInt("id"))
@@ -113,20 +122,35 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			evaluateOnCallFrame(conn, message);
 			
 		} else if (method.equals("resume")) {
-			debugServer.getBrowserInterface().sendMsgToWebView("breakpoint-resume", null, null);
+			sendDebuggerMsgToWebView(conn, "breakpoint-resume", message);
 			
 		} else if (method.equals("stepOver")) {
-			debugServer.getBrowserInterface().sendMsgToWebView("breakpoint-step-over", null, null);
+			sendDebuggerMsgToWebView(conn, "breakpoint-step-over", message);
 			
 		} else if (method.equals("stepOut")) {
-			debugServer.getBrowserInterface().sendMsgToWebView("breakpoint-step-out", null, null);
+			sendDebuggerMsgToWebView(conn, "breakpoint-step-out", message);
 			
 		} else if (method.equals("stepInto")) {
-			debugServer.getBrowserInterface().sendMsgToWebView("breakpoint-step-into", null, null);
+			sendDebuggerMsgToWebView(conn, "breakpoint-step-into", message);
 			
 		} else {
 			super.onReceiveMessage(conn, method, message);
 		}
+	}
+
+	private void sendDebuggerMsgToWebView(final WebSocketConnection conn,
+			final String command, final JSONObject message) throws JSONException {
+		
+		debugServer.getBrowserInterface().sendMsgToWebView(command, null, new ReplyReceiver() {
+			
+			@Override
+			public void onReply(JSONObject data) throws JSONException {
+				sendAckMessage(conn, message);
+
+				conn.send(new JSONStringer().object()
+						.key("method").value("Debugger.resumed").endObject().toString());
+			}
+		});
 	}
 	
 	/**
@@ -173,11 +197,39 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			loadedScripts.clear();
 			sendGlobalObjectCleared(conn);
 			
+		} else if (method.equals("getResourceTree")) {
+			
+			sendResourceTree(conn, message);
 		} else {
 			super.onSendMessage(conn, method, message);
 		}
 	}
 	
+	private void sendResourceTree(WebSocketConnection conn, JSONObject message) throws JSONException {
+		
+		JSONStringer result = new JSONStringer().object()
+			   .key("result").object()
+			      .key("frameTree").object()
+			         .key("frame").object()
+			            .key("id").value("3130.1")
+			            .key("url").value("http://localhost/index.html")
+			            .key("loaderId").value("3130.2")
+			            .key("securityOrigin").value("http://localhost")
+			            .key("mimeType").value("text/html")
+			         .endObject()
+			      .key("resources").array();
+		
+		for (String file : loadedScripts.keySet()) {
+			result.object()
+				.key("url").value(file)
+				.key("type").value("Script")
+				.key("mimeType").value("text/plain")
+			.endObject();
+		}
+		
+		conn.send(result.endArray().endObject().endObject().key("id").value(message.getInt("id")).endObject().toString());
+	}
+
 	/**
 	 * Send global object cleared.
 	 *
@@ -256,43 +308,49 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 	 * @param message the JSON message
 	 * @throws JSONException some JSON exception
 	 */
-	private void setBreakpointByUrl(final WebSocketConnection conn, final JSONObject message) throws JSONException {
+	private void setBreakpointByUrl(final WebSocketConnection conn, final int id, final String url, final int lineNumber, final boolean actualLocation) throws JSONException {
 				
-		final JSONObject params = message.getJSONObject("params");
-		
 		debugServer.getBrowserInterface().sendMsgToWebView(
 				"breakpoint-set",
-				new JSONObject().put("url", params.getString("url")).put(
-						"lineNumber", params.getInt("lineNumber")),
+				new JSONObject().put("url", url).put(
+						"lineNumber", lineNumber),
 				new ReplyReceiver() {
 
 			@Override
 			public void onReply(JSONObject data) throws JSONException {
 				
 				// add breakpoint to internal list of breakpoints
-				String url = params.getString("url");
 				List<Integer> breakpoints = scriptBreakpoints.get(url);
 				if (breakpoints == null) {
 					breakpoints = new ArrayList<Integer>();
 					scriptBreakpoints.put(url, breakpoints);
 				}
-				int lineNumber = params.getInt("lineNumber");
 				if (!breakpoints.contains(lineNumber)) {
 					breakpoints.add(lineNumber);
 				}
 				
-				conn.send(new JSONStringer().object()
-						.key("id").value(message.getInt("id"))
+				JSONStringer res = new JSONStringer().object()
+						.key("id").value(id)
 						.key("result").object()
-							.key("breakpointId").value(data.getString("breakpointId"))
-							.key("locations").array()
-								.object()
-									.key("scriptId").value(url)
-									.key("lineNumber").value(lineNumber)
-									.key("columnNumber").value(0)
-								.endObject()
-							.endArray()
+							.key("breakpointId").value(data.getString("breakpointId"));
+				
+				if (actualLocation) {
+					res.key("actualLocation").object()
+						.key("scriptId").value(url)
+						.key("lineNumber").value(lineNumber)
+						.key("columnNumber").value(0)
+					.endObject();
+				} else {
+					res.key("locations").array()
+						.object()
+							.key("scriptId").value(url)
+							.key("lineNumber").value(lineNumber)
+							.key("columnNumber").value(0)
 						.endObject()
+					.endArray();
+				}
+				
+				conn.send(res.endObject()
 					.endObject().toString());
 			}
 		});
