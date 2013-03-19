@@ -1,10 +1,9 @@
 jsHybugger - Javascript Debugger for Android WebViews
 =====================================================
 
-Maybe you already know how easy it is to debug web pages on your Android device with Google Chrome and the Remote Debugging feature. But how to debug a web page which runs inside a native app within a webview component? Perhaps you would say, use jConsole or Weinre and co ... YES these are all great tools, but which tool offer you real javascript debugging like the chrome webinspector? Now jsHybugger comes to play :-) 
+Maybe you already know how easy it is to debug web pages on your Android device with Google Chrome and the Remote Debugging feature. But how to debug a web page which runs inside a native app within a webview component? The normal approach is to insert a bunch of console.log() calls to your code and use logcat or a remote console tool to watch your debug statementsm and take some action. If you know this kind of developing, maybe jsHybugger would be an interessting tools, because it offer you a real debugger feeling for android web views.
 
-jsHybugger is a debugging service which you can easily integrate into your existing Android App to enable
-javascript debugging for webview components inside your app. You can even debug PhoneGap apps.
+jsHybugger implements the [Chrome Remote Debugging Protocol][https://developers.google.com/chrome-developer-tools/docs/debugger-protocol) as an android service. You can easily integrate the component into your existing Android App to enable javascript debugging for webview components inside your app. You can even debug PhoneGap apps.
 
 How does it work?
 
