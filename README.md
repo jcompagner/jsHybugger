@@ -11,9 +11,10 @@ jsHybugger will intercept all resource requests from your webview, and will do a
 javascript and html files. Javascript files, with the extension ".min.js" will not be instrumented and therefor not debug-able. If you use the non minified version of large libraries i.e. jquery, it's important to start the app on the first run (with jsHybugger) not in debug mode. The instrumentation will take some time (jquery about 10sec.), the instrumented files are stored in a cache and are used at next startup. File changes are detected automatically and will trigger an re-instrumentation of the file. jsHybugger will automatically starts a WebSocket-Server on port 8888 on your device. You can use Eclipse together with the [Chrome-DevTools for Java](http://code.google.com/p/chromedevtools/) or you can use the "Chrome Browser" on your notebook/desktop to access the debugging service on your smartphone.
 
 # jsHybugger pictures and videos 
-	jsHybugger + eclipse + chrome devtools [slides](http://jshybugger.org/slides/eclipse_phonegap/)
-	jsHybugger + eclipse + chrome devtools [video](http://www.youtube.com/watch?v=h7zAj9M-OYo)  
-	jsHybugger + Chrome Browser (TBD)
+
+* jsHybugger + eclipse + chrome devtools [slides](http://jshybugger.org/slides/eclipse_phonegap/)
+* jsHybugger + eclipse + chrome devtools [video](http://www.youtube.com/watch?v=h7zAj9M-OYo)  
+* jsHybugger + Chrome Browser (TBD)
 
 # Example Android App
 You can build the example using maven or you can just download the example [APK](http://jshybugger.org/download/jshybugger-webview-ex.apk) and start debugging (skip next lines and continue reading with "Connect chrome browser to mobile device").
