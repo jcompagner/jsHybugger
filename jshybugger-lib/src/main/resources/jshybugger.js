@@ -41,7 +41,7 @@ window.JsHybugger = (function() {
     	var msg = null;
     	if (block) {
 	       	while ((msg = JsHybuggerNI.getQueuedMessage(true)) != null) {
-	       		if (!processCommand(parseSafe(msg), callStack[callStack.length-1].evalScope)) {
+	       		if (!processCommand(parseSafe(msg), callStack[callStack.length-1])) {
 	       			break;
 	       		}
 	       	}
@@ -49,7 +49,7 @@ window.JsHybugger = (function() {
     	
     	// before returning process all pending queue messages
     	while ((msg = JsHybuggerNI.getQueuedMessage(false)) != null) {
-    		processCommand(parseSafe(msg));
+    		processCommand(parseSafe(msg), block ? callStack[callStack.length-1] : null);
     	}
     }
     
@@ -99,22 +99,22 @@ window.JsHybugger = (function() {
     /**
      * Debugger message processing.
 	 * @param {object} cmd message from debug server
-	 * @param {object} evalScopeFunc scope function for resolving variables on call stack
+	 * @param {object} stack scope for resolving variables on call stack
 	 * @return {boolean} true for non break-able messages 
      */
-    function processCommand(cmd,evalScopeFunc) {
+    function processCommand(cmd,stack) {
 		if (NOT_INITIALIZED) return;
 
 		if (cmd) {
 	        switch (cmd.command) {
 	        	case 'eval':
 	        		return runSafe(function() {
-	        			doEval(evalScopeFunc, cmd);
+	        			doEval(stack, cmd);
 	        		}, true);
 	        		
 	        	case 'getProperties':
 	        		return runSafe(function() {
-	        			getProperties(evalScopeFunc, cmd);
+	        			getProperties(stack.evalScope, cmd);
 	        		}, true);
 	        		        		
 	            case 'breakpoint-set':
@@ -243,6 +243,15 @@ window.JsHybugger = (function() {
 					//console.log(props[objProp] + " found, value: " + obj);
 				}
 				
+			} else if (objName.indexOf('expr') == 0) {
+
+				var props = objName.split('.');
+				for (var objProp in props) {
+					//console.log("inspecting obj: " + props[objProp]);
+					obj = props[objProp] == 'expr' ? stack.expr : obj[props[objProp]];
+					//console.log(props[objProp] + " found, value: " + obj);
+				}
+				
 			} else {
 				obj = stack.evalScope(objName);
 			}
@@ -284,16 +293,41 @@ window.JsHybugger = (function() {
 	 * @param {object} evalScopeFunc scope function for resolving variables on call stack
 	 * @param {object} cmd message from debug server
      */
-	function doEval(evalScopeFunc, cmd) {
+	function doEval(stack, cmd) {
 		if (NOT_INITIALIZED) return;
 
-        var evalResult;
+        var response = {};
+        
         try {
-            evalResult = evalScopeFunc ? evalScopeFunc(cmd.data.expression) : eval(cmd.data.expression);
+            var evalResult = stack && stack.evalScope ? stack.evalScope(cmd.data.expression) : eval(cmd.data.expression);
+            if (stack) {
+
+            	response.type = typeof(evalResult);
+
+            	if (cmd.data.returnByValue) {
+            		response.description = response.value = evalResult;
+            	} else {
+                	var exprID = "ID" + new Date().getTime();
+                	stack.expr = stack.expr || {};
+                	stack.expr[exprID] = evalResult ;
+            		
+            		response.objectId = "stack:" + stack.depth + ":expr." + exprID;
+            		if (response.type == 'object') {
+            			response.description = 'object';
+            		} else {
+            			response.description = "" + evalResult;
+            		}
+            	}
+            } else {
+            	response = { 
+            		type : typeof(evalResult), 
+        			value : evalResult
+        		};
+            }
         } catch (ex) {
             evalResult = ex.toString();
         }  
-        JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ type : typeof(evalResult), value : evalResult }));
+        JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify(response));
     }
     
 	/**
@@ -420,9 +454,9 @@ window.JsHybugger = (function() {
         lastFile = file;
         lastLine = line;
         
-        var isBreakpoint = (breakpoints[file] && breakpoints[file][line]) || /* explicit breakpoint? */
-                           isDebuggerStatement ||                            /* debugger; statement? */
-                           shouldBreak(callStackDepth);                          /* step (in|over|out) or break-on-next? */
+        var isBreakpoint = (breakpoints[file] && breakpoints[file][line]) || /* breakpoint set? */
+                           isDebuggerStatement ||                            /* break on debugger; keyword? */
+                           shouldBreak(callStackDepth);                      /* break on next (in|over|out) */
 
         if (!isBreakpoint) {
             return;
@@ -444,7 +478,7 @@ window.JsHybugger = (function() {
      * Used by the instrumented code to track function entries.
      */
     function pushStack(that, evalScopeFunc, functionName, vars, file, line) {
-        callStack.push({that : that, evalScope: evalScopeFunc, name : functionName, file : file, line : line, lastFile : lastFile, lastLine : lastLine, varnames : vars });
+        callStack.push({depth : callStackDepth, that : that, evalScope: evalScopeFunc, name : functionName, file : file, line : line, lastFile : lastFile, lastLine : lastLine, varnames : vars });
         ++callStackDepth;
     };
     
