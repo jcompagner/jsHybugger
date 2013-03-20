@@ -107,6 +107,19 @@ window.JsHybugger = (function() {
 
 		if (cmd) {
 	        switch (cmd.command) {
+	        	case 'callFunctionOn':
+	        		return runSafe(function() {
+	        			var objectParams = cmd.data.params.objectId.split(":");
+	        			stack = callStack[objectParams[1]] || stack;
+
+	        			var response = {
+	        					result : stack.evalScope(cmd.data.expression)
+	        			};
+	        			
+	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify(response));
+	        			
+	        		}, true);
+	        		
 	        	case 'eval':
 	        		return runSafe(function() {
 	        			doEval(stack, cmd);
@@ -235,25 +248,18 @@ window.JsHybugger = (function() {
 		} else {
 			var objName = objectParams[2];
 			var obj = null;
-			if (objName.indexOf('this') == 0) {
-				var props = objName.split('.');
-				for (var objProp in props) {
-					//console.log("inspecting obj: " + props[objProp]);
-					obj = props[objProp] == 'this' ? stack.that : obj[props[objProp]];
-					//console.log(props[objProp] + " found, value: " + obj);
-				}
-				
-			} else if (objName.indexOf('expr') == 0) {
+			var props = objName.split('.');
 
-				var props = objName.split('.');
-				for (var objProp in props) {
-					//console.log("inspecting obj: " + props[objProp]);
-					obj = props[objProp] == 'expr' ? stack.expr : obj[props[objProp]];
-					//console.log(props[objProp] + " found, value: " + obj);
-				}
-				
+			if (objName.indexOf('this') == 0) {
+				obj = stack.that;
+			} else if (objName.indexOf('expr') == 0) {
+				obj = stack.expr;
 			} else {
-				obj = stack.evalScope(objName);
+				obj = stack.evalScope(props[0]);
+			}
+
+			for (var i=1; obj && i < props.length; i++) {
+				obj = obj[props[i]];
 			}
 			
 			for (expr in obj) {

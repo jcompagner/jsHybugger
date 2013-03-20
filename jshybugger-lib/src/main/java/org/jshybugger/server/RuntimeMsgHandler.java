@@ -72,9 +72,32 @@ public class RuntimeMsgHandler extends AbstractMsgHandler {
 			
 			evaluate(conn, message);
 
+		} else if (method.equals("callFunctionOn")) {
+
+			callFunctionOn(conn, message);
+			
 		} else {
 			super.onReceiveMessage(conn, method, message);
 		}
+	}
+
+	private void callFunctionOn(final WebSocketConnection conn, final JSONObject message) throws JSONException {
+
+		debugServer.getBrowserInterface().sendMsgToWebView(
+				"callFunctionOn",
+				new JSONObject().put("params", message.getJSONObject("params")),
+				new ReplyReceiver() {
+
+			@Override
+			public void onReply(JSONObject data) throws JSONException {
+				
+				conn.send(new JSONStringer().object()
+						.key("id").value(message.getInt("id"))
+						.key("result").value(data.getJSONObject("result"))
+						.endObject().toString());
+				}
+		});		
+		
 	}
 
 	/**
