@@ -15,7 +15,9 @@
  */
 package org.jshybugger.server;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
 import org.json.JSONException;
@@ -32,6 +34,8 @@ public class ConsoleMsgHandler extends AbstractMsgHandler {
 
 	/** The methods available. */
 	private final HashMap<String,Boolean> METHODS_AVAILABLE = new HashMap<String, Boolean>(); 
+	
+	private final List<JSONObject> storedMessages = new ArrayList<JSONObject>();
 
 	/**
 	 * Instantiates a new console msg handler.
@@ -60,12 +64,20 @@ public class ConsoleMsgHandler extends AbstractMsgHandler {
 			
 			conn.send(reply.toString());
 			
+			pushStoredMessages(conn);
 		} else {
 			super.onReceiveMessage(conn, method, message);
 		}
 	}
 	
 	
+	private void pushStoredMessages(WebSocketConnection conn) throws JSONException {
+		for (JSONObject msg : storedMessages) {
+			sendMessageAdded(conn, msg);			
+		}
+		storedMessages.clear();
+	}
+
 	/* (non-Javadoc)
 	 * @see de.cyberflohrs.jshybugger.server.AbstractMsgHandler#onSendMessage(org.webbitserver.WebSocketConnection, java.lang.String, org.json.JSONObject)
 	 */
@@ -94,6 +106,8 @@ public class ConsoleMsgHandler extends AbstractMsgHandler {
 				.key("method").value("Console.messagesCleared")
 				.endObject()
 			.toString());
+			
+			storedMessages.clear();
 		}
 	}
 	
@@ -118,6 +132,8 @@ public class ConsoleMsgHandler extends AbstractMsgHandler {
 					.endObject()
 				.endObject()
 				.toString());
+		} else {
+			storedMessages.add(msg);
 		}
 	}
 }

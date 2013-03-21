@@ -16,6 +16,7 @@
 package org.jshybugger;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.jshybugger.instrumentation.JsCodeLoader;
 import org.jshybugger.server.Md5Checksum;
+import org.mozilla.javascript.EvaluatorException;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
@@ -114,11 +116,24 @@ public class DebugContentProvider extends ContentProvider {
 				FileOutputStream outputStream = getContext().openFileOutput(loadUrl, Context.MODE_PRIVATE);
 				try {
 					JsCodeLoader.instrumentFile(resource.getInputSream(), url, outputStream);
-				} catch (IOException e) {
-			        Log.d(TAG, "instrumenting file failed: " + uri, e);
+
+				} catch (EvaluatorException e) {
+			        Log.d(TAG, "parsing failure while instrumenting file: " + e.getMessage());
 
 			        // delete file - maybe partially instrumented file.
 					getContext().deleteFile(loadUrl);
+					
+					String writeConsole = "console.error('Javascript syntax error: " + e.getMessage().replace("'", "\"") + "')";
+					return createParcel(new InputResource(false, false, new BufferedInputStream( new ByteArrayInputStream(writeConsole.getBytes()))));
+					
+				} catch (Exception e) {
+			        Log.d(TAG, "instrumentation failed, delivering original file: " + uri, e);
+
+			        // delete file - maybe partially instrumented file.
+					getContext().deleteFile(loadUrl);
+
+					return createParcel(openInputFile(url));
+					
 				} finally {
 					resource.getInputSream().close();
 				}
@@ -128,14 +143,7 @@ public class DebugContentProvider extends ContentProvider {
 				return ParcelFileDescriptor.open(loadUrlFd, ParcelFileDescriptor.MODE_READ_ONLY);
 			} else {
 		        Log.d(TAG, "loading file: " + uri);
-				ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
-				
-				InputStream inputStream = resource.getInputSream();
-
-				new TransferThread(inputStream, new AutoCloseOutputStream(
-						pipe[1]), resource.isHtml()).start();
-				
-				return pipe[0];
+				return createParcel(resource);
 			}
 			
 		} catch (IOException e) {
@@ -144,6 +152,18 @@ public class DebugContentProvider extends ContentProvider {
 
 		return null;
     }
+
+	private ParcelFileDescriptor createParcel(InputResource resource)
+			throws IOException {
+		ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+		
+		InputStream inputStream = resource.getInputSream();
+
+		new TransferThread(inputStream, new AutoCloseOutputStream(
+				pipe[1]), resource.isHtml()).start();
+		
+		return pipe[0];
+	}
 
 	/**
 	 * Open local or network file resource

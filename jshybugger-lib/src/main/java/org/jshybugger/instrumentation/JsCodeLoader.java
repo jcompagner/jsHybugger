@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.ast.AstRoot;
 
@@ -50,12 +51,12 @@ public class JsCodeLoader {
 	 * @param outputStream the output stream
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	public static void instrumentFile(final InputStream inputFile, final String scriptUri, final OutputStream outputStream) throws IOException  {
+	public static void instrumentFile(final InputStream inputFile, final String scriptUri, final OutputStream outputStream) throws Exception  {
 	
 		final InputStreamReader inputStreamReader = new InputStreamReader(inputFile);
 		try {
 			final CountDownLatch startSignal = new CountDownLatch(1);
-			final List<IOException> parseExceptions = new ArrayList<IOException>();
+			final List<Exception> parseExceptions = new ArrayList<Exception>();
 			
 			// parsing must be done in extra thread, because of demand for high stack size by rhino parser 
 			ThreadGroup tGroup = new ThreadGroup("JsParserGroup");
@@ -77,6 +78,8 @@ public class JsCodeLoader {
 							writer.write(ast.toSource());
 							writer.close();
 							
+						} catch (EvaluatorException e) {
+							parseExceptions.add(e);
 						} catch (IOException e) {
 							parseExceptions.add(e);
 						} finally {
