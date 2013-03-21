@@ -489,6 +489,7 @@ window.JsHybugger = (function() {
      * Used by the instrumented code to report thrown exceptions in the code.
      */
     function reportException(e) {
+    	console.error('Exception at line: ' + lastLine + ", file: " + lastFile + ", reason: " + e.toString());
     	sendDebuggerPaused('exception', { description : e.toString() });
     }
     
