@@ -166,8 +166,7 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 		
 		debugServer.getBrowserInterface().sendMsgToWebView(
 				"eval",
-				new JSONObject().put("expression", params.getString("expression"))
-					.put("returnByValue", params.getBoolean("returnByValue")),
+				new JSONObject().put("params", params),
 				new ReplyReceiver() {
 
 			@Override

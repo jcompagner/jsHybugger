@@ -97,6 +97,18 @@ window.JsHybugger = (function() {
     }
     
     /**
+	 * @return {object} stack object created by pushStack method. 
+     * @param {string} objectId object identifier i.e. stack:0:varname 
+     */
+    function getStackForObjectId(objectId) {
+    	if (objectId) {
+	    	var objectParams = objectId.split(":");
+	    	return objectParams.length > 1 ? callStack[objectParams[1]] : null;
+    	} 
+    	return null; 
+	}
+
+    /**
      * Debugger message processing.
 	 * @param {object} cmd message from debug server
 	 * @param {object} stack scope for resolving variables on call stack
@@ -122,7 +134,7 @@ window.JsHybugger = (function() {
 	        		
 	        	case 'eval':
 	        		return runSafe(function() {
-	        			doEval(stack, cmd);
+	        			doEval(getStackForObjectId(cmd.data.params.callFrameId) || stack, cmd);
 	        		}, true);
 	        		
 	        	case 'getProperties':
@@ -303,14 +315,15 @@ window.JsHybugger = (function() {
 		if (NOT_INITIALIZED) return;
 
         var response = {};
+        var params = cmd.data.params;
         
         try {
-            var evalResult = stack && stack.evalScope ? stack.evalScope(cmd.data.expression) : eval(cmd.data.expression);
+            var evalResult = stack && stack.evalScope ? stack.evalScope(params.expression) : eval(params.expression);
             if (stack) {
 
             	response.type = typeof(evalResult);
 
-            	if (cmd.data.returnByValue) {
+            	if (params.returnByValue) {
             		response.description = response.value = evalResult;
             	} else {
                 	var exprID = "ID" + new Date().getTime();
@@ -390,7 +403,7 @@ window.JsHybugger = (function() {
     	for (var i=callStackDepth-1; i >= 0; i--) {
     		
     		var frameInfo = {};
-    		frameInfo.callFrameId = "frame:"+i;
+    		frameInfo.callFrameId = "stack:"+i;
     		frameInfo.functionName = callStack[i].name;
     		frameInfo.location = {
     			scriptId : i == callStackDepth-1 ? lastFile : callStack[i+1].lastFile,

@@ -141,7 +141,7 @@ public class RuntimeMsgHandler extends AbstractMsgHandler {
 		
 		debugServer.getBrowserInterface().sendMsgToWebView(
 				"eval",
-				new JSONObject().put("expression", params.getString("expression")),
+				new JSONObject().put("params", params),
 				new ReplyReceiver() {
 
 			@Override
