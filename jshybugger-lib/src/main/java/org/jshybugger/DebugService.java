@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jshybugger.server.DebugServer;
+import org.jshybugger.server.DebugSession;
 
 import android.app.Activity;
 import android.app.Service;
@@ -46,11 +47,10 @@ public class DebugService extends Service {
     /** Binder given to clients */
     private final IBinder mBinder = new LocalDebugService();
 	
-	/** The debug server. */
-	private DebugServer debugServer;
-	
 	/** The callback handler. */
 	private List<Messenger> callbackHandler = new ArrayList<Messenger>();
+
+	private DebugSession debugSession;
 	
 	/** The logging TAG */
 	private static final String TAG = "DebugService";
@@ -70,8 +70,13 @@ public class DebugService extends Service {
 	@Override
 	public void onCreate() {
 		try {
-			debugServer = new DebugServer( 8888, this );
+			DebugServer debugServer = new DebugServer( 8888 );
+			debugSession = new DebugSession(this);
+			
+			debugServer.exportSession(debugSession);
 		} catch (UnknownHostException e) {
+			Log.d(TAG, "onCreate() failed", e);
+		} catch (InterruptedException e) {
 			Log.d(TAG, "onCreate() failed", e);
 		}
 	}
@@ -133,7 +138,12 @@ public class DebugService extends Service {
 	 * @param activity the activity
 	 */
 	public void attachWebView(WebView webView, Activity activity) {
-		debugServer.attachWebView(webView, activity);
+
+		JSDInterface browserInterface = JSDInterface.getJSDInterface();
+		browserInterface.setActivity(activity);
+		browserInterface.setWebView(webView);
+		
+		debugSession.setBrowserInterface(browserInterface);
 		
 		if (Build.VERSION.SDK_INT >= 16) {  
 		    Method method;

@@ -29,17 +29,17 @@ abstract public class AbstractMsgHandler implements MessageHandler {
 	private String OBJECT_NAME = null;
 	
 	/** The debug server. */
-	final protected DebugServer debugServer;
+	final protected DebugSession debugSession;
 
 	/**
 	 * Instantiates a new abstract msg handler.
 	 *
-	 * @param debugServer the debug server
+	 * @param debugSession the debug server
 	 * @param objectName the object name
 	 */
-	public AbstractMsgHandler(DebugServer debugServer, String objectName) {
+	public AbstractMsgHandler(DebugSession debugSession, String objectName) {
 		OBJECT_NAME = objectName;
-		this.debugServer = debugServer;
+		this.debugSession = debugSession;
 	}
 
 	/* (non-Javadoc)

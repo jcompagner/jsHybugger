@@ -37,7 +37,7 @@ public class PageMsgHandler extends AbstractMsgHandler {
 	 *
 	 * @param debugServer the debug server
 	 */
-	public PageMsgHandler(DebugServer debugServer) {
+	public PageMsgHandler(DebugSession debugServer) {
 		super(debugServer, "Page");
 
 		METHODS_AVAILABLE.put("disable", true);
@@ -61,14 +61,14 @@ public class PageMsgHandler extends AbstractMsgHandler {
 			
 		} else if ("enable".equals(method)) {
 			
-			debugServer.getBrowserInterface().sendMsgToWebView(
+			debugSession.getBrowserInterface().sendMsgToWebView(
 					"breakpoint-resume",
 					new JSONObject(), null);
 			
 		} else if ("getResourceTree".equals(method)) {
 
 			// forward message to debug handler for processing
-			debugServer.getMessageHandler(DebuggerMsgHandler.HANDLER_NAME)
+			debugSession.getMessageHandler(DebuggerMsgHandler.HANDLER_NAME)
 					.onSendMessage(conn, "getResourceTree", message);
 
 		} else if ("reload".equals(method)) {
@@ -90,7 +90,7 @@ public class PageMsgHandler extends AbstractMsgHandler {
 	 */
 	private void pageReload(final WebSocketConnection conn, final JSONObject message) throws JSONException {
 
-		debugServer.getBrowserInterface().sendMsgToWebView(
+		debugSession.getBrowserInterface().sendMsgToWebView(
 				"page-reload",
 				new JSONObject().put("params", message.getJSONObject("params")),
 				new ReplyReceiver() {

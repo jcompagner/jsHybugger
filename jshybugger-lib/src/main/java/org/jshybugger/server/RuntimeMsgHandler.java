@@ -38,7 +38,7 @@ public class RuntimeMsgHandler extends AbstractMsgHandler {
 	 *
 	 * @param debugServer the debug server
 	 */
-	public RuntimeMsgHandler(DebugServer debugServer) {
+	public RuntimeMsgHandler(DebugSession debugServer) {
 		super(debugServer, "Runtime");
 
 		METHODS_AVAILABLE.put("enable", true);
@@ -83,7 +83,7 @@ public class RuntimeMsgHandler extends AbstractMsgHandler {
 
 	private void callFunctionOn(final WebSocketConnection conn, final JSONObject message) throws JSONException {
 
-		debugServer.getBrowserInterface().sendMsgToWebView(
+		debugSession.getBrowserInterface().sendMsgToWebView(
 				"callFunctionOn",
 				new JSONObject().put("params", message.getJSONObject("params")),
 				new ReplyReceiver() {
@@ -111,7 +111,7 @@ public class RuntimeMsgHandler extends AbstractMsgHandler {
 	private void getProperties(final WebSocketConnection conn, final JSONObject message) throws JSONException {
 		JSONObject params = message.getJSONObject("params");
 		
-		debugServer.getBrowserInterface().sendMsgToWebView(
+		debugSession.getBrowserInterface().sendMsgToWebView(
 				"getProperties",
 				new JSONObject().put("objectId", params.getString("objectId")),
 				new ReplyReceiver() {
@@ -139,7 +139,7 @@ public class RuntimeMsgHandler extends AbstractMsgHandler {
 	private void evaluate(final WebSocketConnection conn, final JSONObject message) throws JSONException {
 		JSONObject params = message.getJSONObject("params");
 		
-		debugServer.getBrowserInterface().sendMsgToWebView(
+		debugSession.getBrowserInterface().sendMsgToWebView(
 				"eval",
 				new JSONObject().put("params", params),
 				new ReplyReceiver() {

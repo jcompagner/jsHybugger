@@ -22,25 +22,20 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 
-import android.app.Activity;
 import android.util.Log;
 import android.util.SparseArray;
-import android.webkit.WebView;
 
 /**
  * This class is the interface between the webview and the debugging service.
  * 
  */
-public class JSDInterface {
+public abstract class AbstractBrowserInterface implements BrowserInterface {
 
 	/** The Constant TAG. */
 	private final static String TAG = "JSDInterface";
 	
-	/** The jsrdp server. */
-	private DebugServer jsrdpServer;
-	
-	/** The web view. */
-	private WebView webView;
+	/** The debug session server. */
+	private DebugSession debugSession;
 	
 	/** The message queue. */
 	private List<String> messageQueue = new ArrayList<String>(); 
@@ -51,82 +46,31 @@ public class JSDInterface {
 	/** The reply receivers. */
 	private SparseArray<ReplyReceiver> replyReceivers = new SparseArray<ReplyReceiver>();
 	
-	/** The activity. */
-	private Activity activity;
-	
 	/** The sync queue mode. */
 	private boolean syncQueueMode = false;
-	
-	/** The jsdi interface. */
-	private static JSDInterface jsdiInterface = new JSDInterface();
 	
 	/**
 	 * Instantiates a new jSD interface.
 	 */
-	private JSDInterface() {
+	protected AbstractBrowserInterface() {
 	}
 		
 	/**
-	 * Gets the jSD interface.
+	 * Gets the debug session.
 	 *
-	 * @return the jSD interface
+	 * @return the debug session
 	 */
-	public static JSDInterface getJSDInterface() {
-		return jsdiInterface;
-	}
-	
-	/**
-	 * Gets the debug server.
-	 *
-	 * @return the debug server
-	 */
-	public DebugServer getDebugServer() {
-		return jsrdpServer;
+	public DebugSession getDebugSession() {
+		return debugSession;
 	}
 
 	/**
-	 * Sets the debug server.
+	 * Sets the debug session.
 	 *
-	 * @param jsrdpServer the new debug server
+	 * @param debugSession the new debug session
 	 */
-	public void setDebugServer(DebugServer jsrdpServer) {
-		this.jsrdpServer = jsrdpServer;
-	}
-
-	/**
-	 * Gets the web view.
-	 *
-	 * @return the web view
-	 */
-	public WebView getWebView() {
-		return webView;
-	}
-
-	/**
-	 * Sets the web view.
-	 *
-	 * @param webView the new web view
-	 */
-	public void setWebView(WebView webView) {
-		this.webView = webView;
-	}
-
-	/**
-	 * Gets the activity.
-	 *
-	 * @return the activity
-	 */
-	public Activity getActivity() {
-		return activity;
-	}
-
-	/**
-	 * Sets the activity.
-	 *
-	 * @param activity the new activity
-	 */
-	public void setActivity(Activity activity) {
-		this.activity = activity;
+	public void setDebugSession(DebugSession debugSession) {
+		this.debugSession = debugSession;
 	}
 
 	/**
@@ -139,7 +83,7 @@ public class JSDInterface {
 		
 		try {
 			JSONObject msg = new JSONObject(data);
-			jsrdpServer.sendMessage(path, msg);
+			debugSession.sendMessage(path, msg);
 			
 		} catch (JSONException e) {
 			Log.e(TAG, "sendToServer failed for path: " + path, e);
@@ -168,16 +112,13 @@ public class JSDInterface {
 			messageQueue.notifyAll();
 		
 			if (!syncQueueMode) {
-		        final Runnable runnable = new Runnable() {
-		            public void run() {
-		            	webView.loadUrl("javascript:JsHybugger.processMessages(false)");
-		            }                
-		        };
-		        activity.runOnUiThread(runnable);
+				notifyBrowser();
 			}
 		}
 	}
 	
+	public abstract void notifyBrowser();
+
 	/**
 	 * Send reply to debug service.
 	 *

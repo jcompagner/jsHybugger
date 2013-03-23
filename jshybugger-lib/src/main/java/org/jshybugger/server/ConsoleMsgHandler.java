@@ -42,7 +42,7 @@ public class ConsoleMsgHandler extends AbstractMsgHandler {
 	 *
 	 * @param debugServer the debug server
 	 */
-	public ConsoleMsgHandler(DebugServer debugServer) {
+	public ConsoleMsgHandler(DebugSession debugServer) {
 		super(debugServer, "Console");
 
 		METHODS_AVAILABLE.put("enable", true);

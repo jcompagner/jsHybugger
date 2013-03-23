@@ -16,7 +16,6 @@
 package org.jshybugger;
 
 import org.jshybugger.DebugService.LocalDebugService;
-import org.jshybugger.server.JSDInterface;
 
 import android.app.Activity;
 import android.content.ComponentName;
