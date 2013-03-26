@@ -1,13 +1,13 @@
-jsHybugger - Javascript Debugger for Android Hybrid Apps
-========================================================
+jsHybugger - Javascript Debugger for Android 
+============================================
 
-Maybe you already know how easy it is to debug web pages on your Android device with Google Chrome and the Remote Debugging feature. Unfortunately cou can't use this feature (maybe in future?) to debug a web page which runs inside a native app (within a webview component)? And now, what can i do, to track down my javascript error? The normal approach is to insert a bunch of console.log() calls to your code and use logcat or a remote console tool to watch your debug statements and take some action. If you know this kind of developing, maybe jsHybugger would be an interessting tools, because it offer you a real debugger feeling for android web views.
+Maybe you already know how easy it is to debug web pages on your Android device with Google Chrome and the Remote Debugging feature. Unfortunately you can't use this feature (maybe in future?) to debug a web page which runs inside a native app (within a webview component) or the default android browser? And now, what can you do, to track down my javascript errors? The normal approach is to insert a bunch of console.log() calls to your code and use logcat or a remote console tool to watch your debug statements and take some action. If you know this kind of developing, maybe jsHybugger would be an interessting tools for you!?
 
-jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.google.com/chrome-developer-tools/docs/debugger-protocol) as an android service. You can easily integrate the service component into your existing Android App to enable javascript debugging for webview components. You can even debug PhoneGap apps.
+jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.google.com/chrome-developer-tools/docs/debugger-protocol) as an android service. You can easily integrate the service component into your existing Android App to enable javascript debugging for webview components (you can also debug PhoneGap apps) or you can use the [jsHybugger Proxy App](http://jshybugger.org/download/jshybugger-proxy.apk) (available soon on the play store) to debug web pages in the default android browser.
 
 How does it work?
 
-jsHybugger will intercept all resource requests from your webview, and will do an on-the-fly instrumentation of your 
+jsHybugger will intercept all resource requests for your web page, and will do an on-the-fly instrumentation of your 
 javascript and html files. Javascript files, with the extension ".min.js" will not be instrumented and therefor not debug-able. If you use the non minified version of large libraries i.e. jquery, it's important to start the app on the FIRST run (with jsHybugger) NOT in debug mode. The instrumentation will take some time (jquery about 10sec.), the instrumented files are stored in a cache and are used at next startup. File changes are detected automatically and will trigger an re-instrumentation of the file. jsHybugger will automatically starts a WebSocket-Server on port 8888 on your device. You can use Eclipse together with the [Chrome-DevTools for Java](http://code.google.com/p/chromedevtools/) or you can use the "Chrome Browser" on your notebook/desktop to access the debugging service on your smartphone.
 
 # jsHybugger features
