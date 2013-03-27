@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">JsHybugger Service</string>
+    <string name="tcp_host">Remote Host:</string>
+    <string name="tcp_port">Remote Port:</string>
+    <string name="btn_stop_service">stop service</string>
+    <string name="btn_start_service">start service</string>
+    <string name="btn_open_browser">open browser</string>
+    <string name="resource_uri">URI</string>
+    <string name="btn_clear_cache">clear js cache</string>
+</resources>
