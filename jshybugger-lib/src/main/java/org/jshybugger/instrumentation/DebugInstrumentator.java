@@ -34,6 +34,7 @@ import org.mozilla.javascript.ast.FunctionCall;
 import org.mozilla.javascript.ast.FunctionNode;
 import org.mozilla.javascript.ast.IfStatement;
 import org.mozilla.javascript.ast.KeywordLiteral;
+import org.mozilla.javascript.ast.LabeledStatement;
 import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.NodeVisitor;
 import org.mozilla.javascript.ast.NumberLiteral;
@@ -223,6 +224,28 @@ public class DebugInstrumentator implements NodeVisitor {
 			FunctionNode functionNode = (FunctionNode)node;
 			if (functionNode.getFunctionName() != null) {
 				functionName = functionNode.getFunctionName().getIdentifier();
+			} else {
+				if (functionNode.getParent() instanceof VariableInitializer) {
+					if (functionNode.getParent().getParent() instanceof VariableDeclaration) {
+						VariableDeclaration decl = (VariableDeclaration)functionNode.getParent().getParent();
+						if ((decl.getVariables() != null) && (decl.getVariables().size()>0)) { 
+							functionName = decl.getVariables().get(0).getTarget().getString();
+						}
+					}
+				} else if (functionNode.getParent() instanceof LabeledStatement) {
+					LabeledStatement decl = (LabeledStatement)functionNode.getParent();
+					if ((decl.getLabels() != null) && (decl.getLabels().size() > 0)) {
+						functionName = decl.getLabels().get(0).getName();
+					}
+				} else if (functionNode.getParent() instanceof Assignment) {
+					Assignment decl = (Assignment)functionNode.getParent();
+					if ((decl.getLeft() != null) && (decl.getLeft() instanceof PropertyGet)) {
+						PropertyGet prop = (PropertyGet)decl.getLeft();
+						if ((prop.getLeft() instanceof Name) && (prop.getRight() instanceof Name)) {
+							functionName =	prop.getLeft().getString() + "." + prop.getRight().getString();
+						}
+					}
+				}
 			}
 			fctnBody = functionNode.getBody();
 

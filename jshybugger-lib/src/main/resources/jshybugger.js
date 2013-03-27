@@ -17,6 +17,7 @@
 /* 
  * JsHybugger runtime library.
  */
+if (window['JsHybugger'] === undefined) {
 window.JsHybugger = (function() {
     var breakpoints = {};
     var breakpointsById = {};
@@ -25,26 +26,84 @@ window.JsHybugger = (function() {
     var lastLine = '';
     var callStack = [];
     var callStackDepth = 0;
-	var NOT_INITIALIZED = window['JsHybuggerNI'] === undefined;
+    var blockModeActive = false;
 	
-	if (NOT_INITIALIZED) {
-		console.info("JsHybugger core not loaded, propably you use it outside a native app.")
+	if (window['JsHybuggerNI'] === undefined) {
+		console.info("JsHybugger loaded outside a native app.")
+		window['JsHybuggerNI'] = {
+			sendToDebugService : function(method, data) {
+				
+				sendXmlData('sendToDebugService', { arg0: method, arg1: data});
+			},
+			
+			sendReplyToDebugService : function(id, data) {
+
+				return sendXmlData('sendReplyToDebugService', { arg0: id, arg1: data});
+			},
+			
+			getQueuedMessage : function(flag) {
+				var data = sendXmlData('getQueuedMessage', { arg0: flag});
+				
+				return data;
+			}
+		};
+		
+		openPushChannel();
 	}
+
+    function openPushChannel() {
+    	
+		var pushChannel = new XMLHttpRequest();
+		pushChannel.onreadystatechange = function() {
+		   if(pushChannel.readyState == 4) {
+		      if (pushChannel.status == '200') {
+				  if (pushChannel.responseText) {
+					  eval(pushChannel.responseText);
+				  }
+		    	  setTimeout(openPushChannel, 0);
+		      } else {
+		    	  setTimeout(openPushChannel, 1000);
+		      }
+		   }
+		}
+		pushChannel.timeout = 7000;
+		pushChannel.open('GET', 'http://localhost:8888/jshybugger/pushChannel', true);
+		pushChannel.send();
+	}
+    
+    function sendXmlData(cmd, data) {
+    	var response;
+    	var xmlObj = new XMLHttpRequest();
+    	xmlObj.onreadystatechange = function() {
+    	   if(xmlObj.readyState == 4) {
+		      response = xmlObj.status == '200' ? xmlObj.responseText : null;
+		   }
+		}
+		xmlObj.open ('POST', 'http://localhost:8888/jshybugger/' + cmd, false);
+		xmlObj.send (JSON.stringify(data));
+		
+		return response;
+    }
     
 	/**
 	 * Processes pending debugger queue messages.
 	 * @param {boolean} block call will block until break-able message is received
 	 */
     function processMessages(block) {
-		if (NOT_INITIALIZED) return;
+		if (!block && blockModeActive) return;
 		
     	var msg = null;
     	if (block) {
-	       	while ((msg = JsHybuggerNI.getQueuedMessage(true)) != null) {
-	       		if (!processCommand(parseSafe(msg), callStack[callStack.length-1])) {
-	       			break;
-	       		}
-	       	}
+    		try {
+	    		blockModeActive = true;
+		       	while ((msg = JsHybuggerNI.getQueuedMessage(true)) != null) {
+		       		if (!processCommand(parseSafe(msg), callStack[callStack.length-1])) {
+		       			break;
+		       		}
+		       	}
+    		} finally {
+    			blockModeActive = false;
+    		}
     	}
     	
     	// before returning process all pending queue messages
@@ -60,12 +119,11 @@ window.JsHybugger = (function() {
      * 
      */
     function sendToDebugService(path, payload) {
-		if (NOT_INITIALIZED) return;
 		
         try {
        		return parseSafe(JsHybuggerNI.sendToDebugService(path, JSON.stringify(payload)));
         } catch (ex) {
-            console.error('JsHybugger sendToDebugService failed: ' + ex.toString());
+           // console.error('JsHybugger sendToDebugService failed: ' + ex.toString());
         }
     }
     
@@ -73,7 +131,6 @@ window.JsHybugger = (function() {
      * Wrap browser console interface and dispatch messages to the debug server.
      */
     function replaceConsole() {
-		if (NOT_INITIALIZED) return;
 
         if (!window.console) {
             window.console = {};
@@ -115,7 +172,6 @@ window.JsHybugger = (function() {
 	 * @return {boolean} true for non break-able messages 
      */
     function processCommand(cmd,stack) {
-		if (NOT_INITIALIZED) return;
 
 		if (cmd) {
 	        switch (cmd.command) {
@@ -212,6 +268,9 @@ window.JsHybugger = (function() {
 	        			}, 500);
 	        		}, false);
 	            	
+	            case 'timeout':
+	            	return true;
+	            	
 	        	default:
 	        		console.warn('JsHybugger unknown command received:' + cmd.command);
 	        }
@@ -224,7 +283,6 @@ window.JsHybugger = (function() {
 	 * @param {object} cmd message from debug server
      */
     function getProperties(evalScopeFunc, cmd) {
-		if (NOT_INITIALIZED) return;
 		
 		var objectParams = cmd.data.objectId.split(":");
 		var results = [];
@@ -312,7 +370,6 @@ window.JsHybugger = (function() {
 	 * @param {object} cmd message from debug server
      */
 	function doEval(stack, cmd) {
-		if (NOT_INITIALIZED) return;
 
         var response = {};
         var params = cmd.data.params;
@@ -454,7 +511,6 @@ window.JsHybugger = (function() {
      * Send 'GlobalPageLoaded' message to debug server message handlers.
      */
     function pageLoaded() {
-		if (NOT_INITIALIZED) return;
         
 		var cmd = sendToDebugService('GlobalPageLoaded', {        });
        	// before returning - process all pending queue messages 
@@ -537,3 +593,4 @@ window.JsHybugger = (function() {
     }
 
 })();
+}

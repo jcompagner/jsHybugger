@@ -54,7 +54,7 @@ public class DebugSession extends BaseWebSocketHandler {
 	private final HashMap<String,MessageHandler> HANDLERS = new HashMap<String,MessageHandler>(); 
 	
 	/** The application context. */
-	private Context application;
+	protected Context application;
 	
 	/** The client connection list. */
 	private List<WebSocketConnection> connections = new ArrayList<WebSocketConnection>(); 		
@@ -202,9 +202,10 @@ public class DebugSession extends BaseWebSocketHandler {
 	 */
 	public String loadScriptResourceById(String scriptUri) throws IOException {
 		
+		Log.d(TAG, "loadScriptResourceById: " + scriptUri);
+		
 		InputStream resource = openInputFile(scriptUri);
-		DataInputStream in = new DataInputStream(resource);
-		BufferedReader br = new BufferedReader(new InputStreamReader(in));
+		BufferedReader br = new BufferedReader(new InputStreamReader(resource));
 		
 		String strLine;
 		StringBuffer sb = new StringBuffer();
@@ -214,8 +215,8 @@ public class DebugSession extends BaseWebSocketHandler {
 			sb.append(strLine);
 			sb.append("\r\n");
 		}
-		in.close();
 		br.close();
+		Log.d(TAG, "loadScriptResourceById - length: " + sb.length());
 		
 		return sb.toString();
 	}
@@ -227,7 +228,7 @@ public class DebugSession extends BaseWebSocketHandler {
 	 * @return the buffered input stream
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	private BufferedInputStream openInputFile(String url) throws IOException {
+	protected BufferedInputStream openInputFile(String url) throws IOException {
 
 		BufferedInputStream resource = null;
         if (url.startsWith(ANDROID_ASSET_URL)) {

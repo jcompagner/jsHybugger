@@ -51,7 +51,7 @@ public class JsCodeLoader {
 	 * @param outputStream the output stream
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	public static void instrumentFile(final InputStream inputFile, final String scriptUri, final OutputStream outputStream) throws Exception  {
+	public synchronized static void instrumentFile(final InputStream inputFile, final String scriptUri, final OutputStream outputStream) throws Exception  {
 	
 		final InputStreamReader inputStreamReader = new InputStreamReader(inputFile);
 		try {

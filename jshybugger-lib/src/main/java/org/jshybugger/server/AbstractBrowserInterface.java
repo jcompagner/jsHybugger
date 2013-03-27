@@ -49,10 +49,22 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	/** The sync queue mode. */
 	private boolean syncQueueMode = false;
 	
+	private String TIMEOUT_MSG = null;
+
+	protected int maxWaitTime = 0;
+	
 	/**
 	 * Instantiates a new jSD interface.
 	 */
-	protected AbstractBrowserInterface() {
+	protected AbstractBrowserInterface(int maxWaitTime) {
+		this.maxWaitTime = maxWaitTime;
+		try {
+			TIMEOUT_MSG = new JSONStringer().object()
+					.key("command").value("timeout")
+					.endObject().toString();
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
 	}
 		
 	/**
@@ -81,6 +93,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 */
 	public void sendToDebugService(String path, String data) {
 		
+		//Log.d(TAG, "sendToDebugService");
 		try {
 			JSONObject msg = new JSONObject(data);
 			debugSession.sendMessage(path, msg);
@@ -127,6 +140,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 */
 	public void sendReplyToDebugService(int replyId, String data) {
 		
+		//Log.d(TAG, "sendReplyToDebugService");
 		ReplyReceiver rec = replyReceivers.get(replyId);
 		if (rec != null) {
 			try {
@@ -147,6 +161,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 */
 	public String getQueuedMessage(boolean wait) throws InterruptedException {
 		synchronized (messageQueue) {
+			//Log.d(TAG, "getQueuedMessage");
 			syncQueueMode = wait;
 			
 			if (messageQueue.size()>0) {
@@ -155,7 +170,16 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 			
 			if (wait) {
 				while (messageQueue.isEmpty()) {
-					messageQueue.wait();
+					try {
+						messageQueue.wait(maxWaitTime);
+						if (maxWaitTime>0) {
+							return TIMEOUT_MSG; 
+						}
+					} catch (InterruptedException ex) {
+						if (messageQueue.isEmpty()) {
+							return TIMEOUT_MSG;
+						}
+					}
 				}
 				
 				return messageQueue.remove(0);

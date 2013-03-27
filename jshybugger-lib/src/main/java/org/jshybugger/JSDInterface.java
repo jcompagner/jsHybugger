@@ -39,7 +39,7 @@ public class JSDInterface extends AbstractBrowserInterface {
 	 * Instantiates a new jSD interface.
 	 */
 	private JSDInterface() {
-		super();
+		super(0);
 	}
 		
 	/**
