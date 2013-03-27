@@ -7,7 +7,8 @@ jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.
 
 # NEW - [jsHybugger Debugging App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) 
 
-just install the app and start debugging - no code changes needed to use jsHybugger with your web pages!
+Just install the app and start debugging - no code changes needed to use jsHybugger with your web pages!
+Watch the [[video]](https://www.youtube.com/watch?v=JuTM2gbQPu4) or [[slides]](http://jshybugger.org/slides/default_browser/index.html#s2) and see how easy it is to use jsHybugger.
 
 How does it work?
 
