@@ -22,13 +22,12 @@ import org.jshybugger.server.AbstractBrowserInterface;
 import org.webbitserver.HttpResponse;
 
 /**
- * This class is the interface between the webview and the debugging service.
+ * This class is the interface between the browser and the debugging service.
  * 
  */
 public class JSDInterface extends AbstractBrowserInterface {
 
 	private boolean notifyBrowser = false;
-
 	private Timer timer = null;
 	
 	/**

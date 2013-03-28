@@ -1,7 +1,6 @@
 package org.jshybugger.proxy;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -75,16 +74,6 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 		                HttpHeaders.Names.CONTENT_LENGTH,
 		                Integer.toString(contentLength));		
 				
-				/*
-				BufferedReader br = new BufferedReader(new InputStreamReader(new BufferedInputStream(new ByteArrayInputStream(m.getContent().array()))))
-				String line = null;
-				
-				while ((line = br.readLine()) != null) {
-					br					
-				}
-				
-				outChannel = ChannelBuffers.buffer(m.getContent().readableBytes());
-				*/
 			} else if ((requestURI.endsWith(".js") || ((contentType != null) && contentType.contains("javascript")))
 					   && !requestURI.endsWith(".min.js")) {
 

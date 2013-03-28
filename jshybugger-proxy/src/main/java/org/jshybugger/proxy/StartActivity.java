@@ -68,6 +68,7 @@ public class StartActivity extends Activity {
         		debugServiceIntent = new Intent(StartActivity.this, DebugService.class);
         		startService(debugServiceIntent);
         		
+        		
         		stopButton.setEnabled(true);
         		startButton.setEnabled(false);
         		host.setEnabled(false);
@@ -109,6 +110,17 @@ public class StartActivity extends Activity {
         		}
             }
         });
+
+		if (ProxyService.isRunning()) {
+    		debugServiceIntent = new Intent(StartActivity.this, DebugService.class);
+    		proxyServiceIntent = new Intent(StartActivity.this, ProxyService.class);
+
+    		stopButton.setEnabled(true);
+    		startButton.setEnabled(false);
+    		host.setEnabled(false);
+    		port.setEnabled(false);
+    		openBrowser.setEnabled(true);
+    	}
 	}
 	
 	private void showAlert(String message) {

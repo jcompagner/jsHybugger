@@ -20,17 +20,32 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class ProxyService.
+ */
 public class ProxyService extends Service {
 
-	/** The logging TAG */
+	/** The logging TAG. */
 	private static final String TAG = "ProxyService";
 	
+	/** The executor services. */
 	private List<ExecutorService> executorServices = new ArrayList<ExecutorService>();
-    final private static long STALE_CONNECTION_TIMEOUT = 5000;
+    
+    /** The Constant PROXY_LISTEN_PORT. */
+    final private static int PROXY_LISTEN_PORT = 8080;
 
+	/** The server bootstrap. */
 	private ServerBootstrap serverBootstrap;
+	
+	/** The channel. */
 	private Channel channel;
+	
+	/** The channel factory. */
 	private NioClientSocketChannelFactory channelFactory;
+	
+	/** The is running. */
+	private static boolean isRunning = false;
 	
     /* (non-Javadoc)
      * @see android.app.Service#onBind(android.content.Intent)
@@ -46,59 +61,62 @@ public class ProxyService extends Service {
 	 */
 	@Override
 	public void onCreate() {
+		isRunning =true;
 	}
 
 
+	/**
+	 * Start proxy server.
+	 *
+	 * @param remoteHost the remote host
+	 * @param remotePort the remote port
+	 */
 	private void startProxyServer(String remoteHost, int remotePort) {
-		int localPort = 8080;
-        // Configure the bootstrap.
-	    ExecutorService executor = Executors.newCachedThreadPool();
-        serverBootstrap = new ServerBootstrap();
         
-        // Set up the event pipeline factory.
-        channelFactory = new NioClientSocketChannelFactory(executor, executor);
-        
-        serverBootstrap.setPipelineFactory(
-                new ProxyPipelineFactory(this.getApplicationContext(), channelFactory, remoteHost, remotePort));
-/*
-		final StaleConnectionTrackingHandler staleConnectionTrackingHandler = new StaleConnectionTrackingHandler(STALE_CONNECTION_TIMEOUT, executor);
-        ScheduledExecutorService staleCheckExecutor = Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory("PROXY-STALE-CONNECTION-CHECK-THREAD"));
-        staleCheckExecutor.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-            	synchronized (staleConnectionTrackingHandler) {
-            		staleConnectionTrackingHandler.closeStaleConnections();
-            	}
-            }
-        }, STALE_CONNECTION_TIMEOUT / 2, STALE_CONNECTION_TIMEOUT / 2, TimeUnit.MILLISECONDS);
-        executorServices.add(staleCheckExecutor);
-*/
-        ExecutorService bossExecutor = Executors.newSingleThreadExecutor(new NamingThreadFactory("PROXY-BOSS-THREAD"));
-        executorServices.add(bossExecutor);
-        ExecutorService workerExecutor = Executors.newSingleThreadExecutor(new NamingThreadFactory("PROXY-WORKER-THREAD"));
-        executorServices.add(workerExecutor);
-        serverBootstrap.setFactory(new NioServerSocketChannelFactory(bossExecutor, workerExecutor, 1));
+		if (serverBootstrap == null) {
+			// Configure the bootstrap.
+		    ExecutorService executor = Executors.newCachedThreadPool();
+	        serverBootstrap = new ServerBootstrap();
+	        
+	        // Set up the event pipeline factory.
+	        channelFactory = new NioClientSocketChannelFactory(executor, executor);
+	        
+	        serverBootstrap.setPipelineFactory(
+	                new ProxyPipelineFactory(this.getApplicationContext(), channelFactory, remoteHost, remotePort));
 
-        executorServices.add(executor);
-
-        // Start up the server.
-        channel = serverBootstrap.bind(new InetSocketAddress(localPort));
+	        ExecutorService bossExecutor = Executors.newSingleThreadExecutor(new NamingThreadFactory("PROXY-BOSS-THREAD"));
+	        executorServices.add(bossExecutor);
+	        ExecutorService workerExecutor = Executors.newSingleThreadExecutor(new NamingThreadFactory("PROXY-WORKER-THREAD"));
+	        executorServices.add(workerExecutor);
+	        serverBootstrap.setFactory(new NioServerSocketChannelFactory(bossExecutor, workerExecutor, 1));
+	
+	        executorServices.add(executor);
+	
+	        // Start up the server.
+	        channel = serverBootstrap.bind(new InetSocketAddress(PROXY_LISTEN_PORT));
+		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see android.app.Service#onDestroy()
+	 */
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
 		
 		if (channel != null) {
             channel.close();
+            channel= null;
         }
 		
 		if (channelFactory != null) {
 			channelFactory.releaseExternalResources();
+			channelFactory = null;
 		}
 		
 		if (serverBootstrap != null) {
 			serverBootstrap.releaseExternalResources();
+	        serverBootstrap = null;
         }
 
         // shut down all services & give them a chance to terminate
@@ -107,7 +125,7 @@ public class ProxyService extends Service {
         }
         
         executorServices.clear();
-        serverBootstrap = null;
+		isRunning = false;
 	}	
 	
 	/* (non-Javadoc)
@@ -139,6 +157,11 @@ public class ProxyService extends Service {
 	}
 	
     // See JavaDoc for ExecutorService
+    /**
+     * Shutdown and await termination.
+     *
+     * @param executorService the executor service
+     */
     private void shutdownAndAwaitTermination(ExecutorService executorService) {
         executorService.shutdownNow(); // Disable new tasks from being submitted
         try {
@@ -157,4 +180,13 @@ public class ProxyService extends Service {
             Thread.currentThread().interrupt();
         }
     }	
+    
+    /**
+     * Checks if service is running.
+     *
+     * @return true, if service running
+     */
+    public static boolean isRunning() {
+    	return isRunning;
+    }
 }

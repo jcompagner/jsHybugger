@@ -60,6 +60,7 @@ public class DebugService extends Service {
 	 */
 	@Override
 	public void onCreate() {
+		Log.d(TAG, "onCreate()");
 		try {
 			debugServer = new DebugServer( 8888 );
 			debugServer.addHandler("/jshybugger/.*", new JSHybuggerResourceHandler());
@@ -100,7 +101,7 @@ public class DebugService extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		
-		//Log.d(TAG, "onStartCommand: " + intent);
+		Log.d(TAG, "onStartCommand: " + intent);
 		return START_STICKY;
 	}
 	

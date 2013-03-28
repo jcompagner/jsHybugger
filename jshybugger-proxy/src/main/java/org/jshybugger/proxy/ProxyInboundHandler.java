@@ -1,7 +1,6 @@
 package org.jshybugger.proxy;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.buffer.ChannelBuffers;
