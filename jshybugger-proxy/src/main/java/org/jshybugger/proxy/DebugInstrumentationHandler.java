@@ -24,6 +24,7 @@ import android.content.Context;
 
 public class DebugInstrumentationHandler extends SimpleChannelHandler {
 
+	private static final String JS_HYBUGGER = "jsHybugger-";
 	private String requestURI;
 	private Context context;
 
@@ -41,8 +42,22 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 		}
 
 		HttpRequest msg = (HttpRequest) e.getMessage();
-
 		requestURI = msg.getUri();
+		
+		try {
+			String if_header = msg.getHeader("If-None-Match");
+			if (if_header != null && if_header.startsWith(JS_HYBUGGER)) {
+				msg.setHeader("If-None-Match", if_header.substring(JS_HYBUGGER.length()));
+				
+				FileInputStream is = context.openFileInput(DebugInstrumentationHandler.getInstrumentedFileName(requestURI, null));
+				is.close();
+			}
+		} catch (FileNotFoundException ex) {
+			msg.removeHeader("Cache-Control"); 
+			msg.removeHeader("If-None-Match"); 
+			msg.removeHeader("If-Modified-Since");
+		}
+
 		ctx.sendUpstream(e);
 	}
 
@@ -56,8 +71,8 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 			
 			// 100-continue response must be passed through.
 			ctx.sendDownstream(e);
-		} else if (msg instanceof HttpMessage) {
-			HttpMessage m = (HttpMessage) msg;
+		} else if (msg instanceof HttpResponse) {
+			HttpResponse m = (HttpResponse) msg;
 			String contentType = m.getHeader("Content-Type");
 			
 			if ((requestURI.endsWith(".html") && !requestURI.endsWith(".jsp")) ||
@@ -79,6 +94,13 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 
 				if (contentType == null) {
 					m.addHeader("Content-Type", "application/javascript");
+				}
+				
+				m.setHeader("ETag", JS_HYBUGGER + m.getHeader("ETag"));
+
+				if (m.getStatus().getCode() == 304)  { // not-modified
+		            ctx.sendDownstream(e);
+		            return;
 				}
 				
 				BufferedInputStream resStream = new BufferedInputStream(new ChannelBufferInputStream(m.getContent()));
