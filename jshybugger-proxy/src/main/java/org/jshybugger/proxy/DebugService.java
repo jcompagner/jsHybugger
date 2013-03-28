@@ -61,7 +61,7 @@ public class DebugService extends Service {
 	@Override
 	public void onCreate() {
 		try {
-			debugServer = new DebugServer( 8888, 2 );
+			debugServer = new DebugServer( 8888, 1 );
 			debugServer.addHandler("/jshybugger/.*", new JSHybuggerResourceHandler());
 			
 			debugSession = new ProxyDebugSession(this);

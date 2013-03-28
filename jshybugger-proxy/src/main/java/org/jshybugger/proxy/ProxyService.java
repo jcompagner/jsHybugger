@@ -68,7 +68,9 @@ public class ProxyService extends Service {
         staleCheckExecutor.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
-                staleConnectionTrackingHandler.closeStaleConnections();
+            	synchronized (staleConnectionTrackingHandler) {
+            		staleConnectionTrackingHandler.closeStaleConnections();
+            	}
             }
         }, STALE_CONNECTION_TIMEOUT / 2, STALE_CONNECTION_TIMEOUT / 2, TimeUnit.MILLISECONDS);
         executorServices.add(staleCheckExecutor);

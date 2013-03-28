@@ -72,7 +72,7 @@
 	</profiles>
 	
 	<build>
-		<finalName>${project.artifactId}</finalName>
+		<finalName>1.0.2</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -104,7 +104,9 @@
 				<extensions>true</extensions>
 				<configuration>
 					<manifest>
-						<debuggable>true</debuggable>
+						<debuggable>false</debuggable>
+						<versionName>1.0.2</versionName>
+						<versionCode>2</versionCode>
 					</manifest>
 				</configuration>
 				<executions>
