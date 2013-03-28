@@ -71,7 +71,7 @@
 	        android:id="@+id/resource_uri"
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
-	        android:inputType="number"
+	        android:inputType="text"
 	        android:text="/index.html" >
 
 	    </EditText>

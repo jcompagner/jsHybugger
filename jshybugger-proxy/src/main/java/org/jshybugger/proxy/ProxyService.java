@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -13,7 +12,6 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.webbitserver.helpers.NamingThreadFactory;
-import org.webbitserver.netty.StaleConnectionTrackingHandler;
 
 import android.app.Service;
 import android.content.Intent;
@@ -62,7 +60,7 @@ public class ProxyService extends Service {
         
         serverBootstrap.setPipelineFactory(
                 new ProxyPipelineFactory(this.getApplicationContext(), channelFactory, remoteHost, remotePort));
-
+/*
 		final StaleConnectionTrackingHandler staleConnectionTrackingHandler = new StaleConnectionTrackingHandler(STALE_CONNECTION_TIMEOUT, executor);
         ScheduledExecutorService staleCheckExecutor = Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory("PROXY-STALE-CONNECTION-CHECK-THREAD"));
         staleCheckExecutor.scheduleWithFixedDelay(new Runnable() {
@@ -74,7 +72,7 @@ public class ProxyService extends Service {
             }
         }, STALE_CONNECTION_TIMEOUT / 2, STALE_CONNECTION_TIMEOUT / 2, TimeUnit.MILLISECONDS);
         executorServices.add(staleCheckExecutor);
-
+*/
         ExecutorService bossExecutor = Executors.newSingleThreadExecutor(new NamingThreadFactory("PROXY-BOSS-THREAD"));
         executorServices.add(bossExecutor);
         ExecutorService workerExecutor = Executors.newSingleThreadExecutor(new NamingThreadFactory("PROXY-WORKER-THREAD"));

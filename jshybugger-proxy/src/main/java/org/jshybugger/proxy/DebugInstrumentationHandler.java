@@ -85,8 +85,8 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 				
 				outChannel = ChannelBuffers.buffer(m.getContent().readableBytes());
 				*/
-			} else if ((requestURI.endsWith(".js") && !requestURI.endsWith(".min.js")) ||
-				((contentType != null) && contentType.contains("javascript"))) {
+			} else if ((requestURI.endsWith(".js") || ((contentType != null) && contentType.contains("javascript")))
+					   && !requestURI.endsWith(".min.js")) {
 
 				if (contentType == null) {
 					m.addHeader("Content-Type", "application/javascript");

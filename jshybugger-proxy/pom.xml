@@ -105,8 +105,8 @@
 				<configuration>
 					<manifest>
 						<debuggable>false</debuggable>
-						<versionName>1.0.2</versionName>
-						<versionCode>2</versionCode>
+						<versionName>1.0.4</versionName>
+						<versionCode>4</versionCode>
 					</manifest>
 				</configuration>
 				<executions>

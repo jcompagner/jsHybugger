@@ -142,6 +142,11 @@ public class ProxyInboundHandler extends SimpleChannelUpstreamHandler {
 			HttpResponse msg = (HttpResponse) e.getMessage();
             synchronized (trafficLock) {
             	
+            	String location = msg.getHeader("Location");
+            	if ((location != null) && location.startsWith("http")) {
+            		msg.setHeader("Location", "http://localhost:8080" + location.substring(location.indexOf('/', 7)));
+            	}
+            	
                 inboundChannel.write(msg);
 
                 // If inboundChannel is saturated, do not read until notified in
