@@ -58,7 +58,7 @@ You should now see the chrome webinspector and your loaded javascripts. Let's se
 
 # Integrate jsHybugger into your app
 
-1.  Add jshybugger-bundle/target/jshybugger-lib-1.0.0-SNAPSHOT_bundle.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.0.0-SNAPSHOT_bundle.jar)) file to your libs directory
+1.  Add jshybugger-bundle/target/jshybugger-bundle-1.0.0.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.0.0.jar)) file to your libs directory
 
 2.	enhance AndroidManifest.xml
 
