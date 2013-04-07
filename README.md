@@ -30,7 +30,7 @@ javascript and html files. Javascript files, with the extension ".min.js" will n
 
 * jsHybugger + default Android-Browser [[slides]](http://jshybugger.org/slides/default_browser/index.html#s2) [[video]](http://youtu.be/BOvwcp79ocE)  
 * jsHybugger + eclipse + chrome devtools [[slides]](http://jshybugger.org/slides/eclipse_phonegap/index.html#s2) [[video]](http://youtu.be/P5NSlN8eVyk)  
-* jsHybugger + Chrome Browser [[slides]](http://jshybugger.org/slides/chrome_webview/index.html#s2)  [[video]](https://www.youtube.com/watch?v=rUUJaYH-iTs)
+* jsHybugger + Chrome Browser [[slides]](http://jshybugger.org/slides/chrome_webview/index.html#s2)  [[video]](http://youtu.be/hst6pJH9lRA)
 
 # Example Android App
 You can build the example using maven or you can just download the example [APK](http://jshybugger.org/download/jshybugger-webview-ex.apk) and start debugging (skip next lines and continue reading with "Connect chrome browser to mobile device").
