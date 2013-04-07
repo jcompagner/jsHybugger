@@ -29,7 +29,7 @@ javascript and html files. Javascript files, with the extension ".min.js" will n
 # jsHybugger pictures and videos 
 
 * jsHybugger + default Android-Browser [[slides]](http://jshybugger.org/slides/default_browser/index.html#s2) [[video]](http://youtu.be/BOvwcp79ocE)  
-* jsHybugger + eclipse + chrome devtools [[slides]](http://jshybugger.org/slides/eclipse_phonegap/index.html#s2) [[video]](http://youtu.be/h7zAj9M-OYo)  
+* jsHybugger + eclipse + chrome devtools [[slides]](http://jshybugger.org/slides/eclipse_phonegap/index.html#s2) [[video]](http://youtu.be/P5NSlN8eVyk)  
 * jsHybugger + Chrome Browser [[slides]](http://jshybugger.org/slides/chrome_webview/index.html#s2)  [[video]](https://www.youtube.com/watch?v=rUUJaYH-iTs)
 
 # Example Android App
