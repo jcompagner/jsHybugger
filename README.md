@@ -8,7 +8,7 @@ jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.
 # NEW - [jsHybugger Debugging App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) 
 
 Just install the app and start debugging - no code changes needed to use jsHybugger with your web pages!
-Watch the [[video]](https://www.youtube.com/watch?v=JuTM2gbQPu4) or [[slides]](http://jshybugger.org/slides/default_browser/index.html#s2) and see how easy it is to use jsHybugger.
+Watch the [[video]](http://youtu.be/BOvwcp79ocE) or [[slides]](http://jshybugger.org/slides/default_browser/index.html#s2) and see how easy it is to use jsHybugger.
 
 How does it work?
 
@@ -28,9 +28,9 @@ javascript and html files. Javascript files, with the extension ".min.js" will n
 
 # jsHybugger pictures and videos 
 
-* jsHybugger + default Android-Browser [[slides]](http://jshybugger.org/slides/default_browser/index.html#s2) [[video]](https://www.youtube.com/watch?v=JuTM2gbQPu4)  
-* jsHybugger + eclipse + chrome devtools [[slides]](http://jshybugger.org/slides/eclipse_phonegap/index.html#s2) [[video]](http://www.youtube.com/watch?v=h7zAj9M-OYo)  
-* jsHybugger + Chrome Browser [[slides]](http://jshybugger.org/slides/chrome_webview/index.html#s2)  [[video]](https://www.youtube.com/watch?v=rUUJaYH-iTs)
+* jsHybugger + default Android-Browser [[slides]](http://jshybugger.org/slides/default_browser/index.html#s2) [[video]](http://youtu.be/BOvwcp79ocE)  
+* jsHybugger + eclipse + chrome devtools [[slides]](http://jshybugger.org/slides/eclipse_phonegap/index.html#s2) [[video]](http://youtu.be/P5NSlN8eVyk)  
+* jsHybugger + Chrome Browser [[slides]](http://jshybugger.org/slides/chrome_webview/index.html#s2)  [[video]](http://youtu.be/hst6pJH9lRA)
 
 # Example Android App
 You can build the example using maven or you can just download the example [APK](http://jshybugger.org/download/jshybugger-webview-ex.apk) and start debugging (skip next lines and continue reading with "Connect chrome browser to mobile device").
@@ -58,7 +58,7 @@ You should now see the chrome webinspector and your loaded javascripts. Let's se
 
 # Integrate jsHybugger into your app
 
-1.  Add jshybugger-bundle/target/jshybugger-lib-1.0.0-SNAPSHOT_bundle.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.0.0-SNAPSHOT_bundle.jar)) file to your libs directory
+1.  Add jshybugger-bundle/target/jshybugger-bundle-1.0.0.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.0.0.jar)) file to your libs directory
 
 2.	enhance AndroidManifest.xml
 

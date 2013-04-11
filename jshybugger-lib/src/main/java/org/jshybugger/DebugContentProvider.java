@@ -412,27 +412,18 @@ public class DebugContentProvider extends ContentProvider {
 		public void run() {
 			byte[] buf = new byte[1024];
 			int len;
-			int scriptIdx = 0;
 			boolean patchDone = !this.isHTML;
 			
 			try {
 				while ((len = in.read(buf)) > 0) {
 					if (!patchDone) {
-						String strBuf = new String(buf);
-						if (((scriptIdx = strBuf.indexOf("<title")) >= 0) || ((scriptIdx = strBuf.indexOf("<meta")) >= 0)){
-							out.write(strBuf.substring(0, scriptIdx).getBytes());
-							out.write("<script type=\"text/javascript\" src=\"/jshybugger.js\"></script>".getBytes());
-							out.write(strBuf.substring(scriptIdx).getBytes());
-							patchDone=true;
-						} else {
-							out.write(buf, 0, len);
-						}
+						out.write("<script type=\"text/javascript\" src=\"/jshybugger.js\"></script>".getBytes());
+						out.write(buf, 0, len);
+						patchDone=true;
 					} else {
 						out.write(buf, 0, len);
 					}
 				}
-
-
 				
 				in.close();
 				out.flush();
