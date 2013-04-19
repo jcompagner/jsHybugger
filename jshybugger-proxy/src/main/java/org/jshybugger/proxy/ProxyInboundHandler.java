@@ -69,6 +69,7 @@ public class ProxyInboundHandler extends SimpleChannelUpstreamHandler {
                     inboundChannel.setReadable(true);
                 } else {
                     // Close the connection if the connection attempt has failed.
+                	LogActivity.addMessage("Open connection failed: " + future.getCause().toString());
                     inboundChannel.close();
                 }
             }

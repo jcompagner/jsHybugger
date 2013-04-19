@@ -104,9 +104,9 @@
 				<extensions>true</extensions>
 				<configuration>
 					<manifest>
-						<debuggable>false</debuggable>
-						<versionName>1.0.6</versionName>
-						<versionCode>6</versionCode>
+						<debuggable>true</debuggable>
+						<versionName>1.0.7</versionName>
+						<versionCode>7</versionCode>
 					</manifest>
 				</configuration>
 				<executions>

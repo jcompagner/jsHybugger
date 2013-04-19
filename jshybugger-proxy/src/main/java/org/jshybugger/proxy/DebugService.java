@@ -70,9 +70,12 @@ public class DebugService extends Service {
 			debugSession.setBrowserInterface(browserInterface);
 			
 			debugServer.exportSession(debugSession);
+			LogActivity.addMessage("DebugServer listening on port 8888");			
 		} catch (UnknownHostException e) {
+			LogActivity.addMessage("Starting DebugServer failed: " + e.toString());			
 			Log.d(TAG, "onCreate() failed", e);
 		} catch (InterruptedException e) {
+			LogActivity.addMessage("Starting DebugServer failed: " + e.toString());			
 			Log.d(TAG, "onCreate() failed", e);
 		}
 	}
@@ -83,6 +86,7 @@ public class DebugService extends Service {
 		super.onDestroy();
 		browserInterface.stop();
 		debugServer.stop();
+		LogActivity.addMessage("DebugServer stopped");			
 	}
 
 

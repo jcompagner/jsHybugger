@@ -23,9 +23,8 @@
 	        android:id="@+id/tcp_host"
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
-	        android:inputType="text" >
-
-	    </EditText>
+	        android:inputType="textNoSuggestions"/>
+	    
     </LinearLayout>
     
 	<LinearLayout
@@ -71,7 +70,7 @@
 	        android:id="@+id/resource_uri"
 	        android:layout_width="fill_parent"
 	        android:layout_height="wrap_content"
-	        android:inputType="text"
+	        android:inputType="textNoSuggestions"
 	        android:text="/index.html" >
 
 	    </EditText>
@@ -82,7 +81,30 @@
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
 	    android:layout_alignParentTop="true"
-	    android:layout_margin="5dp"
+	    android:layout_marginTop="15dp"
+	    android:layout_marginLeft="5dp"
+	    android:gravity="left"
+	    android:orientation="horizontal" >
+	    
+	    <TextView
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_marginRight="5dp"
+	        android:text="@string/wifi_address" />
+	    
+	    <TextView android:id="@+id/wifi_address"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:layout_marginRight="5dp" />
+	    
+   	    
+	</LinearLayout>
+		
+	<LinearLayout
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_alignParentTop="true"
+	    android:layout_marginTop="15dp"
 	    android:gravity="center_horizontal"
 	    android:orientation="horizontal" >
 		
@@ -104,7 +126,7 @@
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content"
 	    android:layout_alignParentTop="true"
-	    android:layout_margin="5dp"
+	    android:layout_marginTop="5dp"
 	    android:gravity="center_horizontal"
 	    android:orientation="horizontal" >
 		
@@ -121,5 +143,21 @@
 	        android:text="@string/btn_clear_cache" />
 		
 	</LinearLayout>
-	    		
+	
+	<LinearLayout
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:layout_alignParentTop="true"
+	    android:layout_marginTop="5dp"
+	    android:gravity="center_horizontal"
+	    android:orientation="horizontal" >
+		
+		<Button
+	        android:id="@+id/btn_open_log"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="@string/btn_open_log" />
+		
+	</LinearLayout>
+		    		
 </LinearLayout>

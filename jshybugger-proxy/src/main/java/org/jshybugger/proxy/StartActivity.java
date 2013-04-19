@@ -4,16 +4,21 @@ import java.io.File;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.net.Uri;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.text.format.Formatter;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
 public class StartActivity extends Activity {
 
@@ -35,10 +40,20 @@ public class StartActivity extends Activity {
 		final Button startButton = (Button)findViewById(R.id.btn_start_service);
 		final Button openBrowser = (Button)findViewById(R.id.btn_open_browser);
 		final Button clearCache = (Button)findViewById(R.id.btn_clear_cache);
+		final Button openLog = (Button)findViewById(R.id.btn_open_log);
 
+		upateWiFiAddress();
+		
 		host.setText(preferences.getString("host", "www.jshybugger.org"));
 		port.setText(String.valueOf(preferences.getInt("port", 80)));
 		resourceURI.setText(preferences.getString("uri", "/angular-phonecat/app/index.html"));
+		
+		openLog.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+            	Intent intent = new Intent(StartActivity.this, LogActivity.class);
+            	startActivity(intent);
+            }
+		});
 		
 		startButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -105,9 +120,12 @@ public class StartActivity extends Activity {
             public void onClick(View v) {
 
         		File filesDir = getApplicationContext().getFilesDir();
+        		int i=0;
         		for (File file : filesDir.listFiles()) {
         			file.delete();
+        			i++;
         		}
+        		LogActivity.addMessage(i + " cache files deleted");
             }
         });
 
@@ -121,6 +139,20 @@ public class StartActivity extends Activity {
     		port.setEnabled(false);
     		openBrowser.setEnabled(true);
     	}
+		
+		
+	}
+	
+	private void upateWiFiAddress() {
+		final TextView ipAddress = (TextView) findViewById(R.id.wifi_address);
+		WifiManager wiFiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+		
+		WifiInfo conn = null;
+		if (wiFiManager.isWifiEnabled()) {
+			conn = wiFiManager.getConnectionInfo();
+		}
+		
+		ipAddress.setText(conn != null ? Formatter.formatIpAddress(conn.getIpAddress()) : "n/a");
 	}
 	
 	private void showAlert(String message) {

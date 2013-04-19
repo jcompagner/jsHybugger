@@ -20,7 +20,6 @@ import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class ProxyService.
  */
@@ -94,6 +93,8 @@ public class ProxyService extends Service {
 	
 	        // Start up the server.
 	        channel = serverBootstrap.bind(new InetSocketAddress(PROXY_LISTEN_PORT));
+			LogActivity.addMessage("ProxyServer listening on port 8080");			
+	        
 		}
 	}
 	
@@ -126,6 +127,7 @@ public class ProxyService extends Service {
         
         executorServices.clear();
 		isRunning = false;
+		LogActivity.addMessage("ProxyServer stopped");			
 	}	
 	
 	/* (non-Javadoc)

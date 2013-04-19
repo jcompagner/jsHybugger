@@ -26,7 +26,9 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 
 	private static final String JS_HYBUGGER = "jsHybugger-";
 	private String requestURI;
+	private String requestMethod;
 	private Context context;
+	private static int requestId = 0;
 
 	public DebugInstrumentationHandler(Context context) {
 		this.context = context;
@@ -43,6 +45,7 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 
 		HttpRequest msg = (HttpRequest) e.getMessage();
 		requestURI = msg.getUri();
+		requestMethod = msg.getMethod().getName();
 		
 		try {
 			String if_header = msg.getHeader("If-None-Match");
@@ -65,7 +68,13 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 	public void writeRequested(ChannelHandlerContext ctx, MessageEvent e)
 			throws Exception {
 
+		int reqCtx = (++requestId);
+		
 		Object msg = e.getMessage();
+		if (msg instanceof HttpResponse) {
+			LogActivity.addMessage(String.format("R%05d %s %s, SC=%s", reqCtx, requestMethod, requestURI, ((HttpResponse) msg).getStatus().getCode()));
+		}
+		
 		if (msg instanceof HttpResponse
 				&& ((HttpResponse) msg).getStatus().getCode() == 100) {
 			
@@ -78,6 +87,7 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 			if ((requestURI.endsWith(".html") && !requestURI.endsWith(".jsp")) ||
 					((contentType != null) && contentType.contains("html"))) {
 				
+				LogActivity.addMessage(String.format("R%05d Injecting JSHybugger script", reqCtx));				
 				String scriptTag = "<script src=\"http://localhost:8888/jshybugger/jshybugger.js\"></script>";
 				int contentLength = m.getContent().readableBytes() + scriptTag.length();
 				ChannelBuffer buffer = ChannelBuffers.buffer(contentLength);
@@ -114,9 +124,11 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 
 					FileOutputStream outputStream = context.openFileOutput(instrumentedFileName, Context.MODE_PRIVATE);
 					
+					LogActivity.addMessage(String.format("R%05d Starting script instrumentation", reqCtx));				
 					try {
 						resStream.reset();
 						JsCodeLoader.instrumentFile(resStream, requestURI, outputStream);
+						LogActivity.addMessage(String.format("R%05d Script instrumentation successfully completed", reqCtx));				
 						sendInstrumentedFile(m, instrumentedFileName);
 
 					} catch (EvaluatorException ex) {
@@ -129,11 +141,13 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 						m.setHeader(
 				                HttpHeaders.Names.CONTENT_LENGTH,
 				                Integer.toString(writeConsole.length()));		
+						LogActivity.addMessage(String.format("R%05d Script instrumentation failed: %s", reqCtx, writeConsole));				
 						
 					} catch (Exception ie) {
 
 				        // delete file - maybe partially instrumented file.
 				        context.deleteFile(instrumentedFileName);
+						LogActivity.addMessage(String.format("R%05d Script instrumentation failed: %s", reqCtx, ie.toString()));				
 
 					} finally {
 						resStream.close();
