@@ -23,13 +23,11 @@
     access elements control the Android whitelist.
     Domains are assumed blocked unless set otherwise
     -->
-
-    <access origin="http://127.0.0.1*" /> <!-- allow local pages -->
-
+	<!--  since cordova 2.6 - disable access origin check -->
+    <access origin="*" />
 
     <!-- <access origin="https://example.com" /> allow any secure requests to example.com -->
     <!-- <access origin="https://example.com" subdomains="true" /> such as above, but including subdomains, such as www -->
-    <access origin=".*" />
 
     <log level="DEBUG" />
 
@@ -39,6 +37,11 @@
     <preference
         name="exit-on-suspend"
         value="false" />
+		
+	<!--  increase load timeout to 60 seconds -->			
+	<preference 
+		name="loadUrlTimeoutValue"
+		value="60000" />		
 
     <plugins>
         <plugin
