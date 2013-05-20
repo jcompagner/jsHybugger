@@ -18,6 +18,7 @@ package org.jshybugger;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,6 +57,9 @@ public class DebugContentProvider extends ContentProvider {
 	/** The Constant ANDROID_ASSET_URL. */
 	private static final String ANDROID_ASSET_URL = "file:///android_asset/";
 	
+	/** The Constant ANDROID_PRIVATE_URL. */
+	private static final String ANDROID_PRIVATE_URL = "file:///data/data/";
+
 	/** The debug service started. */
 	private CountDownLatch debugServiceStarted = new CountDownLatch(1);
 	
@@ -188,7 +192,16 @@ public class DebugContentProvider extends ContentProvider {
         			url.endsWith(".js"),
         			url.endsWith(".html"), 
         			new BufferedInputStream(getContext().getAssets().open(url,AssetManager.ACCESS_STREAMING)));
+        	
+		} else if (url.contains(ANDROID_PRIVATE_URL)) {   // Must be a private app file
 
+        	url = url.substring(url.indexOf("/data/data/"));  // strip file:// 
+        	
+        	return new InputResource(
+        			url.endsWith(".js"),
+        			url.endsWith(".html"), 
+        			new BufferedInputStream(new FileInputStream(url)));
+        	
         } else if (url.indexOf(":") < 0) {  // Must be a local file
         	
         	return new InputResource(
