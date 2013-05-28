@@ -1,6 +1,7 @@
 var $num1;
 var $num2;
 var $result;
+var db;
 
 $(document).ready(function() {
     $num1 = $('#number1');
@@ -9,7 +10,57 @@ $(document).ready(function() {
     
     $('#calculate').click(calculate);
     $('#reset').click(reset);
+    
+    $('#addKey').click(addKey);
+    $('#getKey').click(getKey);
+    $('#removeKey').click(removeKey);
+    $('#clear').click(clear);
+    
+	window.JsHybugger_localStorage=window.localStorage;
+	window.__defineGetter__("localStorage", function(){
+        return JsHybugger_localStorage;
+    });
+	window.__defineSetter__("localStorage", function(v){
+        JsHybugger_localStorage=v;
+    });
+	
+    db = openDatabase('mydb', '1.0', 'Test DB', 50 * 1024 * 1024);
+    db.transaction(function(tx) {
+        tx.executeSql("CREATE TABLE IF NOT EXISTS " +
+                      "todo(ID INTEGER PRIMARY KEY ASC, todo TEXT, added_on DATETIME)", []);
+
+        tx.executeSql("CREATE TABLE IF NOT EXISTS " +
+                "empty(ID INTEGER PRIMARY KEY ASC, todo TEXT, added_on DATETIME)", []);
+    });
+    addTodo("task one");
+    addTodo("task two");
 });
+
+function addTodo(todoText) {
+  db.transaction(function(tx){
+    var addedOn = new Date();
+    tx.executeSql("INSERT INTO todo(todo, added_on) VALUES (?,?)",
+        [todoText, addedOn]);
+   });
+}
+
+function getStorage() {
+	return $('#storageType')[0].checked ? sessionStorage : localStorage;
+}
+function clear() {
+	getStorage().clear();
+}
+function getKey() {
+	$('#value').val(getStorage().getItem($('#key').val()));
+}
+
+function addKey() {
+	getStorage().setItem($('#key').val(), $('#value').val());
+}
+
+function removeKey() {
+	getStorage().removeItem($('#key').val());
+}
 
 /**
  * Performs calculation

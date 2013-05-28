@@ -6,6 +6,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
         <script type="text/javascript" src="js/jquery.min.js"></script>
+        <script type="text/javascript" src="js/syntax.js"></script>
+        <script type="text/javascript" src="js/runtime_ex.js"></script>
         <script type="text/javascript" src="js/index.js"></script>
         
     </head>
@@ -19,5 +21,18 @@
     		<button id="calculate">calculate</button>
     		<button id="reset">reset</button>
     	</p>
+    	<hr/>
+	    <p>
+	        <h2>storage test</h2>
+	        use session storage: <input type="checkbox" id="storageType" /><br>
+    		Key: <input type="text" size="5" id="key" /> Value: <input size="5" type="text" id="value" /> 
+    	</p>
+    	<p>
+    		<button id="addKey">add key</button>
+    		<button id="getKey">get key</button>
+    		<button id="removeKey">remove key</button>
+    		<button id="clear">clear</button>
+    	</p>
+    	
     </body>
 </html>

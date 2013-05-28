@@ -58,8 +58,7 @@ abstract public class AbstractMsgHandler implements MessageHandler {
 		conn.send(
 				new JSONStringer().object()
 			.key("id").value(message.getInt("id"))
-			.key("error").value(message.getString("method") + " not implemented")
-			.key("result").object().endObject()
+			.key("result").object().key("result").value(false).endObject()
 			.endObject().toString());
 	}
 

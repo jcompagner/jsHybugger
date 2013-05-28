@@ -17,7 +17,6 @@ package org.jshybugger.server;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -82,6 +81,12 @@ public class DebugSession extends BaseWebSocketHandler {
 
 		msgHandler = new PageMsgHandler(this);
 		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
+
+		msgHandler = new DOMStorageMsgHandler(this);
+		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
+
+		msgHandler = new DatabaseMsgHandler(this);
+		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
 	}
 	
 	public void setBrowserInterface(BrowserInterface browserInterface) {
@@ -102,9 +107,20 @@ public class DebugSession extends BaseWebSocketHandler {
 	 * @see org.webbitserver.BaseWebSocketHandler#onOpen(org.webbitserver.WebSocketConnection)
 	 */
 	@Override
-	public void onOpen( WebSocketConnection conn ) {
+	public void onOpen( final WebSocketConnection conn ) {
 		System.out.println( conn.httpRequest().remoteAddress() + " entered the debugger space!" );
 		connections.add(conn);
+
+		try {
+			getBrowserInterface().sendMsgToWebView(
+					"ClientConnected",
+					new JSONObject(),
+					null);
+			
+		} catch (JSONException e) {
+			Log.e(TAG, "Notify ClientConnected failed", e);
+		}		
+		
 	}
 
 	/* (non-Javadoc)
@@ -134,8 +150,7 @@ public class DebugSession extends BaseWebSocketHandler {
 				conn.send(
 						new JSONStringer().object()
 					.key("id").value(message.getInt("id"))
-					.key("error").value(message.getString("method") + " not implemented")
-					.key("result").object().endObject()
+					.key("result").object().key("result").value(false).endObject()
 					.endObject().toString());
 			}
 		} catch (JSONException e) {

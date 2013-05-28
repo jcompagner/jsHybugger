@@ -36,6 +36,7 @@ import org.webbitserver.WebServers;
  */
 public class DebugServer {
 
+	private static final String CHROME_DEVTOOLS_FRONTEND = "https://chrome-devtools-frontend.appspot.com/static/27.0.1453.90/devtools.html?ws=%s/devtools/page/%s";
 	private WebServer webServer;
 	private ExecutorService newFixedThreadPool;
 
@@ -65,7 +66,8 @@ public class DebugServer {
 	
 	                    @Override
 	                    public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) {
-	                        response.status(301).header("Location", "http://chrome-devtools-frontend.appspot.com/static/18.0.1025.166/devtools.html?host=" + request.header("Host") + "&page=1").end();
+	                        response.status(301).header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+	                        	.header("Location", String.format(CHROME_DEVTOOLS_FRONTEND, request.header("Host"), "1")).end();
 	                    }
 	                })
 	                .add("/json", new HttpHandler() {
@@ -74,7 +76,7 @@ public class DebugServer {
 	                    	try {
 								String res = new JSONStringer().array().object()
 								
-										.key("devtoolsFrontendUrl").value("http://chrome-devtools-frontend.appspot.com/static/18.0.1025.166/devtools.html?host=" + request.header("Host") + "&page=1")
+										.key("devtoolsFrontendUrl").value(String.format(CHROME_DEVTOOLS_FRONTEND, request.header("Host"), "1"))
 										.key("faviconUrl").value("http://www.google.de/favicon.ico")
 									    .key("thumbnailUrl").value("/thumb/")
 									    .key("title").value("jsHybugger powered debugging")

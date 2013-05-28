@@ -27,6 +27,7 @@ window.JsHybugger = (function() {
     var callStack = [];
     var callStackDepth = 0;
     var blockModeActive = false;
+	var databases = [];
 	
 	if (window['JsHybuggerNI'] === undefined) {
 		console.info("JsHybugger loaded outside a native app.")
@@ -80,7 +81,7 @@ window.JsHybugger = (function() {
 		   }
 		}
 		xmlObj.open ('POST', 'http://localhost:8888/jshybugger/' + cmd, false);
-		xmlObj.send (JSON.stringify(data));
+		xmlObj.send (stringifySafe(data));
 		
 		return response;
     }
@@ -121,7 +122,7 @@ window.JsHybugger = (function() {
     function sendToDebugService(path, payload) {
 		
         try {
-       		return parseSafe(JsHybuggerNI.sendToDebugService(path, JSON.stringify(payload)));
+       		return parseSafe(JsHybuggerNI.sendToDebugService(path, stringifySafe(payload)));
         } catch (ex) {
            // console.error('JsHybugger sendToDebugService failed: ' + ex.toString());
         }
@@ -160,7 +161,7 @@ window.JsHybugger = (function() {
     function getStackForObjectId(objectId) {
     	if (objectId) {
 	    	var objectParams = objectId.split(":");
-	    	return objectParams.length > 1 ? callStack[objectParams[1]] : null;
+	    	return objectParams.length > 1 && callStackDepth >= objectParams[1] ? callStack[objectParams[1]] : null;
     	} 
     	return null; 
 	}
@@ -176,7 +177,7 @@ window.JsHybugger = (function() {
 		if (cmd) {
 	        switch (cmd.command) {
 	        	case 'callFunctionOn':
-	        		return runSafe(function() {
+	        		return runSafe('callFunctionOn', function() {
 	        			var objectParams = cmd.data.params.objectId.split(":");
 	        			stack = callStack[objectParams[1]] || stack;
 
@@ -184,22 +185,59 @@ window.JsHybugger = (function() {
 	        					result : stack.evalScope(cmd.data.expression)
 	        			};
 	        			
-	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify(response));
+	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(response));
 	        			
 	        		}, true);
 	        		
 	        	case 'eval':
-	        		return runSafe(function() {
+	        		return runSafe('eval', function() {
 	        			doEval(getStackForObjectId(cmd.data.params.callFrameId) || stack, cmd);
 	        		}, true);
+
+	        	case 'getCookies':
+	        		return runSafe('getCookies', function() {
+	        			var response = { cookies : getCookies() };
+
+	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(response));
+	        		}, true);
 	        		
+	        		
+	        	case 'getDOMStorageItems':
+	        		return runSafe('getDOMStorageItems', function() {
+	        			var response = { entries : getDOMStorageItems(cmd.data.params.storageId.isLocalStorage ? localStorage : sessionStorage) };
+
+	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(response));
+	        		}, true);
+
+	        	case 'setDOMStorageItem':
+	        		return runSafe('setDOMStorageItem', function() {
+	        			if (cmd.data.params.storageId.isLocalStorage) {
+	        				localStorage.setItem(cmd.data.params.key, cmd.data.params.value);
+	        			} else {
+	        				sessionStorage.setItem(cmd.data.params.key, cmd.data.params.value);
+	        			} 
+
+	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({}));
+	        		}, true);
+
+	        	case 'removeDOMStorageItem':
+	        		return runSafe('removeDOMStorageItem', function() {
+	        			if (cmd.data.params.storageId.isLocalStorage) {
+	        				localStorage.removeItem(cmd.data.params.key);
+	        			} else {
+	        				sessionStorage.removeItem(cmd.data.params.key);
+	        			} 
+
+	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({}));
+	        		}, true);
+
 	        	case 'getProperties':
-	        		return runSafe(function() {
-	        			getProperties(stack.evalScope, cmd);
+	        		return runSafe('getProperties', function() {
+	        			getProperties(cmd);
 	        		}, true);
 	        		        		
 	            case 'breakpoint-set':
-	        		return runSafe(function() {
+	        		return runSafe('breakpoint-set',function() {
 		                var file = cmd.data.url;
 		                var line = cmd.data.lineNumber;
 		                if (!breakpoints[file]) {
@@ -210,12 +248,12 @@ window.JsHybugger = (function() {
 		                
 		                //console.log("set-breakpoint: " + ((breakpoints[file] && breakpoints[file][line]) || false ) + ", file: " + file + ", line: "+ line);
 		                breakpointsById[breakpointId] = cmd.data;
-		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ breakpointId : breakpointId, lineNumber : line }));
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ breakpointId : breakpointId, lineNumber : line }));
 	        		}, true);
 	                
 	
 	            case 'breakpoint-remove':
-	        		return runSafe(function() {
+	        		return runSafe('breakpoint-remove', function() {
 		                var data = breakpointsById[cmd.data.breakpointId];
 		                if (data) {
 		                	//console.log("remove-breakpoint: " + cmd.data.breakpointId);
@@ -223,53 +261,116 @@ window.JsHybugger = (function() {
 			                delete breakpointsById[cmd.data.breakpointId];
 			                delete breakpoints[data.url][data.lineNumber]; 
 		                	                
-			                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ breakpointId : cmd.data.breakpointId}));
+			                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ breakpointId : cmd.data.breakpointId}));
 		                }
 	        		}, true);
 	            
 	            case 'breakpoint-resume':
-	        		return runSafe(function() {
+	        		return runSafe('breakpoint-resume', function() {
 	        			shouldBreak = function() { return false; };
-		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ }));
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ }));
 	        		}, false);
 	            
 	            case 'breakpoint-step-over':
-	        		return runSafe(function() {
+	        		return runSafe('breakpoint-step-over', function() {
 		                shouldBreak = (function(oldDepth) {
 		                    return function(depth) {
 		                        return depth <= oldDepth;
 		                    };
 		                })(callStackDepth);
-		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ }));
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ }));
 	        		}, false);
 	
 	            case 'breakpoint-step-into':
-	        		return runSafe(function() {
+	        		return runSafe('breakpoint-step-into', function() {
 	        			shouldBreak = function() { return true; };
-		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ }));
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ }));
 	        		}, false);
 	                
 	            case 'breakpoint-step-out':
-	        		return runSafe(function() {
+	        		return runSafe('breakpoint-step-out', function() {
 		                shouldBreak = (function(oldDepth) {
 		                    return function(depth) {
 		                        return depth < oldDepth;
 		                    };
 		                })(callStackDepth);
-		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ }));
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ }));
 	        		}, false);
 	                
 	            case 'page-reload':
-	            	return runSafe(function() {
+	            	return runSafe('page-reload', function() {
 	        			shouldBreak = function() { return false; };
 	        			breakpoints = {};
-	        			setTimeout(function() {
-	        				location.reload();
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ }));
+
+		                setTimeout(function() {
+    		                location.reload();
 	        			}, 500);
 	        		}, false);
 	            	
 	            case 'timeout':
 	            	return true;
+	            	
+	            case 'getDatabaseTableNames':
+	            	return runSafe('getDatabaseTableNames', function() {
+	            		var db = databases[cmd.data.params.databaseId].database;
+	            		db.transaction(function(tx) {
+	            	        tx.executeSql("SELECT name FROM sqlite_master WHERE type = 'table'", [], function(tx,rs) {
+	            	        	var tableNames = [];
+	            	        	for (var i=0; i < rs.rows.length; i++) {
+	            	        		var row = rs.rows.item(i);
+	            	        		if (row.name == '__WebKitDatabaseInfoTable__') {
+	            	        			continue;
+	            	        		}
+	            	        		tableNames.push(row.name);
+	            	        	}
+	    		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ tableNames:tableNames}));
+	            	        });
+	            	    });
+	            			
+	        		}, true);
+	            	
+	            case 'executeSQL':
+	            	return runSafe('executeSQL', function() {
+	            		var db = databases[cmd.data.params.databaseId].database;
+	            		
+	            		db.transaction(function(tx) {
+	            	        tx.executeSql(cmd.data.params.query, [], function(tx,rs) {
+	            	        	
+	            	        	var colNames = [];
+	            	        	var values = [];
+	            	        	for (var ri=0; ri < rs.rows.length; ri++) {
+	            	        		var row = rs.rows.item(ri);
+	            	        		
+            	        			for (var col in row) {
+            	        				// extract header names for first column
+    	            	        		if (ri == 0) {
+   	            	        				colNames.push(col);
+    	            	        		}
+    	            	        		// extract row values
+	            	        			values.push(row[col]);
+	            	        		}
+	            	        	}
+	            	        	
+	    		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ columnNames:colNames, values:values}));
+	            	        });
+	            	        
+	            	    });
+	            			
+	        		}, true);
+	            	
+	            case 'Database.enable':
+            		return runSafe('Database.enable', function() {
+            			
+            			databases.forEach(function(db) {
+                			sendToDebugService('Database.addDatabase', {database:{id:db.id,domain:db.domain,name:db.name, version:db.version}});
+            			});
+            			
+            		}, true);
+	            
+	            case 'ClientConnected':
+	            	return true;
+	            	
 	            	
 	        	default:
 	        		console.warn('JsHybugger unknown command received:' + cmd.command);
@@ -279,10 +380,9 @@ window.JsHybugger = (function() {
     
     /**
      * Handles "getProperties" messages and send back result to debugger client.
-	 * @param {object} evalScopeFunc scope function for resolving variables on call stack
 	 * @param {object} cmd message from debug server
      */
-    function getProperties(evalScopeFunc, cmd) {
+    function getProperties(cmd) {
 		
 		var objectParams = cmd.data.objectId.split(":");
 		var results = [];
@@ -290,7 +390,7 @@ window.JsHybugger = (function() {
 		var stack = callStack[objectParams[1]];
 		
 		if (objectParams.length == 2) {
-			var varnames = stack.varnames ? stack.varnames.split(",") : [];
+			var varnames = stack && stack.varnames ? stack.varnames.split(",") : [];
 			for (var i=0; i < varnames.length; i++) {
 				try {
 					var expr = stack.evalScope(varnames[i]);
@@ -336,7 +436,7 @@ window.JsHybugger = (function() {
 				var oVal = obj[expr];
 				var oType = typeof(oVal);
 				
-				if (oType == 'function') {
+				if ((oType == 'function') || (oType == 'constructor')) {
 					continue;
 				}
 				
@@ -361,7 +461,7 @@ window.JsHybugger = (function() {
 			}
 		}		
         
-        JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify({ result : results }));
+        JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ result : results }));
     }
     
     /**
@@ -403,9 +503,46 @@ window.JsHybugger = (function() {
         } catch (ex) {
             evalResult = ex.toString();
         }  
-        JsHybuggerNI.sendReplyToDebugService(cmd.replyId, JSON.stringify(response));
+        JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(response));
     }
     
+	function stringifySafe(obj){
+	    var printedObjects = [];
+	    var printedObjectKeys = [];
+	    var lastKey, lastVal;
+
+	    function printOnceReplacer(key, value){
+	    	lastKey = key;
+	    	lastVal = value;
+	    	
+	        var printedObjIndex = false;
+	        
+	        printedObjects.forEach(function(obj, index){
+	            if(obj===value){
+	                printedObjIndex = index;
+	            }
+	        });
+
+	        if(printedObjIndex && typeof(value)=="object"){
+	            return "(see object with key " + printedObjectKeys[printedObjIndex] + ")";
+	        } else {
+	        	try {
+	        		// HTMLInputElement will be not serializable
+		        	if ((typeof(value)=="object") && value.constructor && value.constructor.name == "HTMLInputElement") {
+		        		return null;
+		        	}
+		            var qualifiedKey = key || "(empty key)";
+		            printedObjects.push(value);
+		            printedObjectKeys.push(qualifiedKey);
+	                return value;
+	        	} catch (er) {
+	        		return null;
+	        	}
+	        }
+	    }
+	    return JSON.stringify(obj, printOnceReplacer);
+	}
+	
 	/**
 	 * JSON parsing with exception handling.
 	 * @param {string} str JSON string data
@@ -426,11 +563,15 @@ window.JsHybugger = (function() {
 	 * @return {object} retVal value to return after function execution 
 	 * 
 	 */
-    function runSafe(fctn, retVal) {
+    function runSafe(name, fctn, retVal) {
         try {
         	fctn();
         } catch (ex) {
-            return console.log("runSafe failed: " + ex);
+        	var str ="";
+        	for (i in ex) {
+        		str += i + ",";
+        	}
+            return console.log("runSafe failed for: " + name + ", "+ ex);
         } finally {
         	return retVal;
         }
@@ -448,6 +589,63 @@ window.JsHybugger = (function() {
             lineNumber: lastLine,
             callFrames : callFrames
         });
+    }
+    
+    /*
+    * cookie-parser
+    * https://github.com/danjordan/cookie-parser
+    *
+    * Copyright (c) 2012 Daniel Jordan
+    * Licensed under the MIT, GPL licenses.
+    */
+    function getCookies() {
+
+		var attributes = [ 'name', 'value', 'expires', 'path', 'domain',
+				'secure', 'httponly' ];
+		var splitter = /,\s(?=\w+=\w)/g;
+		
+		var cookies = [];
+		
+		if (document.cookie != '') { 
+			var cookie_array = document.cookie.split(splitter);
+		
+			cookie_array.forEach(function(e) {
+				var params = e.split('; ');
+		
+				params.forEach(function(param) {
+					param = param.split('=');
+					var key = param[0];
+					var value = param[1];
+		
+					if (attributes.indexOf(key) > 0) {
+						if (key === 'expires') {
+								cookie[key] = new Date(value);
+							} else {
+								cookie[key] = value || true;
+							}
+						} else {
+							cookie.name = key;
+							cookie.value = value;
+						}
+					});
+		
+					cookies.push(cookie);
+			});
+		}
+		
+		return cookies;
+	}
+    
+    function getDOMStorageItems(storage) {
+    	var items = [];
+    	for (key in storage) {
+    		// JSHybugger is the prefix for the overwritten storge methods
+    		if (key != null && key.indexOf('JsHybugger') != 0) {
+    			items.push([ key, storage[key]]);
+    		}
+    	}
+    	
+    	return items;
     }
     
     /**
@@ -502,6 +700,45 @@ window.JsHybugger = (function() {
 		sendToDebugService('GlobalInitHybugger', { 
         });
 	};
+
+	// intercept setItems, removeItems, clear method calls and notify jsHybugger
+	if (Storage) {
+		Storage.prototype.JsHybugger_setItem = Storage.prototype.setItem;
+		Storage.prototype.setItem = function(key,value) {
+			var item = this.getItem(key);
+			this.JsHybugger_setItem(key,value);
+			if (item == undefined) {
+				sendToDebugService('DOMStorage.domStorageItemAdded', { storageId : { isLocalStorage : this == localStorage}, key : key, newValue : value});
+			} else {
+				sendToDebugService('DOMStorage.domStorageItemUpdated', { storageId : { isLocalStorage : this == localStorage}, key : key, oldValue : item, newValue : value});
+			}
+		};
+
+		Storage.prototype.JsHybugger_removeItem = Storage.prototype.removeItem;
+		Storage.prototype.removeItem = function(key) {
+			this.JsHybugger_removeItem(key);
+			sendToDebugService('DOMStorage.domStorageItemRemoved', { storageId : { isLocalStorage : this == localStorage}, key : key});
+		};
+
+		Storage.prototype.JsHybugger_clear = Storage.prototype.clear;
+		Storage.prototype.clear = function() {
+			this.JsHybugger_clear();
+			sendToDebugService('DOMStorage.domStorageItemsCleared', { storageId : { isLocalStorage : this == localStorage}});
+		};
+	}
+	
+	// intercept openDatabase method calls and notify jsHybugger
+	if (window.openDatabase) {
+		window.JsHybugger_openDatabase = window.openDatabase;
+		window.openDatabase = function(name,version,description,size,cb) {
+			var db = window.JsHybugger_openDatabase(name,version,description,size,cb);
+			databases.push({database:db, id:new String(databases.length),domain:location.hostname,name:name, version:version});
+			
+			sendToDebugService('Database.addDatabase', {database:{id:new String(databases.length-1),domain:location.hostname,name:name, version:version}});
+			return db;
+		};
+	}
+	
 	
     /*
      * ---- begin public API functions
