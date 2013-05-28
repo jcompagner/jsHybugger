@@ -200,11 +200,33 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 		} else if (method.equals("getResourceTree")) {
 			
 			sendResourceTree(conn, message);
+
+		} else if (method.equals("getResourceContent")) {
+			
+			sendResourceContent(conn, message);
+						
 		} else {
 			super.onSendMessage(conn, method, message);
 		}
 	}
 	
+	private void sendResourceContent(final WebSocketConnection conn,
+			final JSONObject message) throws JSONException {
+		
+		JSONObject reply = new JSONObject();
+		
+		reply.put("id", message.getInt("id"));
+		try {
+			reply.put("result", new JSONObject().put("content", 
+					debugSession.loadScriptResourceById(message.getJSONObject("params").getString("url")) ).put("base64Encoded", false));
+			
+		} catch (IOException e) {
+			throw new JSONException(e.getMessage());
+		}
+		
+		conn.send(reply.toString());
+	}
+
 	private void sendResourceTree(WebSocketConnection conn, JSONObject message) throws JSONException {
 		
 		JSONStringer result = new JSONStringer().object()
