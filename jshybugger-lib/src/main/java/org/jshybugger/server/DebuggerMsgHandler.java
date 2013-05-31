@@ -165,7 +165,7 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 		JSONObject params = message.getJSONObject("params");
 		
 		debugSession.getBrowserInterface().sendMsgToWebView(
-				"eval",
+				"evaluateOnCallFrame",
 				new JSONObject().put("params", params),
 				new ReplyReceiver() {
 

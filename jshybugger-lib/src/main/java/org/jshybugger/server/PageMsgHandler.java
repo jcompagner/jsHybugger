@@ -81,39 +81,11 @@ public class PageMsgHandler extends AbstractMsgHandler {
 			
 			pageReload(conn, message);
 
-		} else if ("getCookies".equals(method)) {
-			
-			getCookies(conn, message);
 		} else {
 			super.onReceiveMessage(conn, method, message);
 		}
 	}
 	
-	/**
-	 * Process "Page.getCookies" protocol messages.
-	 * Forwards the message to the WebView and returns the result to the debugger frontend. 
-	 *
-	 * @param conn the websocket connection
-	 * @param message the JSON message
-	 * @throws JSONException some JSON exception
-	 */
-	private void getCookies(final WebSocketConnection conn, final JSONObject message) throws JSONException {
-		
-		debugSession.getBrowserInterface().sendMsgToWebView(
-				"getCookies",
-				new JSONObject(),
-				new ReplyReceiver() {
-
-			@Override
-			public void onReply(JSONObject data) throws JSONException {
-				
-				conn.send(new JSONStringer().object()
-						.key("id").value(message.getInt("id"))
-						.key("result").value(data)
-						.endObject().toString());
-			}
-		});
-	}
 	
 	/**
 	 * Process "Page.reload" protocol messages.

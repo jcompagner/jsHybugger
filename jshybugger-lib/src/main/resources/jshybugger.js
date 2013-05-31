@@ -28,6 +28,7 @@ window.JsHybugger = (function() {
     var callStackDepth = 0;
     var blockModeActive = false;
 	var databases = [];
+	var globalWatches = {};
 	
 	if (window['JsHybuggerNI'] === undefined) {
 		console.info("JsHybugger loaded outside a native app.")
@@ -179,28 +180,25 @@ window.JsHybugger = (function() {
 	        	case 'callFunctionOn':
 	        		return runSafe('callFunctionOn', function() {
 	        			var objectParams = cmd.data.params.objectId.split(":");
-	        			stack = callStack[objectParams[1]] || stack;
+	        			stack = callStack[objectParams[1]];
 
 	        			var response = {
-	        					result : stack.evalScope(cmd.data.expression)
+	        					result : stack ? stack.evalScope(cmd.data.expression) : eval(cmd.data.expression)
 	        			};
 	        			
 	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(response));
 	        			
 	        		}, true);
 	        		
-	        	case 'eval':
-	        		return runSafe('eval', function() {
+	        	case 'evaluateOnCallFrame':
+	        		return runSafe('evaluateOnCallFrame', function() {
 	        			doEval(getStackForObjectId(cmd.data.params.callFrameId) || stack, cmd);
 	        		}, true);
 
-	        	case 'getCookies':
-	        		return runSafe('getCookies', function() {
-	        			var response = { cookies : getCookies() };
-
-	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(response));
+	        	case 'evaluate':
+	        		return runSafe('evaluate', function() {
+	        			doEval(null, cmd);
 	        		}, true);
-	        		
 	        		
 	        	case 'getDOMStorageItems':
 	        		return runSafe('getDOMStorageItems', function() {
@@ -387,9 +385,9 @@ window.JsHybugger = (function() {
 		var objectParams = cmd.data.objectId.split(":");
 		var results = [];
 		
-		var stack = callStack[objectParams[1]];
+		var stack = objectParams[0] === 'stack' ? callStack[objectParams[1]] : undefined;
 		
-		if (objectParams.length == 2) {
+		if (stack && (objectParams.length == 2)) {
 			var varnames = stack && stack.varnames ? stack.varnames.split(",") : [];
 			for (var i=0; i < varnames.length; i++) {
 				try {
@@ -402,6 +400,7 @@ window.JsHybugger = (function() {
 				    };
 					if (expr && (oType == 'object')) {
 						result.value.objectId='stack:' + objectParams[1] + ":"+ varnames[i];
+						result.value.description = oVal && oVal.constructor ? oVal.constructor.name : oVal;
 					} else {
 						result.value.value = expr;
 					}
@@ -418,9 +417,12 @@ window.JsHybugger = (function() {
 		} else {
 			var objName = objectParams[2];
 			var obj = null;
-			var props = objName.split('.');
+			var props = objName ? objName.split('.') : [];
 
-			if (objName.indexOf('this') == 0) {
+			if (!stack) {
+				props = objectParams[1].split('.');
+				obj = globalWatches[props[0]];
+			} else if (objName.indexOf('this') == 0) {
 				obj = stack.that;
 			} else if (objName.indexOf('expr') == 0) {
 				obj = stack.expr;
@@ -436,10 +438,6 @@ window.JsHybugger = (function() {
 				var oVal = obj[expr];
 				var oType = typeof(oVal);
 				
-				if ((oType == 'function') || (oType == 'constructor')) {
-					continue;
-				}
-				
 				var result = {};
 				
 				result.value = {
@@ -449,6 +447,8 @@ window.JsHybugger = (function() {
 				if (oVal && oType == 'object') {
 					result.value.objectId=cmd.data.objectId + "." + expr;
 					result.value.description = oVal && oVal.constructor ? oVal.constructor.name : oVal;
+				} else if (oType == 'function') {
+					result.value.description = oVal ? oVal.toString() : 'function';
 				} else {
 					result.value.value = oVal;
 				}
@@ -489,16 +489,27 @@ window.JsHybugger = (function() {
             		
             		response.objectId = "stack:" + stack.depth + ":expr." + exprID;
             		if (response.type == 'object') {
-            			response.description = 'object';
+            			response.description = evalResult && evalResult.constructor ? evalResult.constructor.name : evalResult;
             		} else {
             			response.description = "" + evalResult;
             		}
             	}
             } else {
-            	response = { 
-            		type : typeof(evalResult), 
-        			value : evalResult
-        		};
+            	response.type = typeof(evalResult);
+
+            	if (params.returnByValue) {
+            		response.description = response.value = evalResult;
+            	} else {
+                	var exprID = "ID" + new Date().getTime();
+                	globalWatches[exprID] = evalResult ;
+            		
+            		response.objectId = "global:" + exprID;
+            		if (response.type == 'object') {
+            			response.description = evalResult.constructor ? evalResult.constructor.name : 'object';
+            		} else {
+            			response.description = "" + evalResult;
+            		}
+            	}
             }
         } catch (ex) {
             evalResult = ex.toString();
@@ -590,51 +601,6 @@ window.JsHybugger = (function() {
             callFrames : callFrames
         });
     }
-    
-    /*
-    * cookie-parser
-    * https://github.com/danjordan/cookie-parser
-    *
-    * Copyright (c) 2012 Daniel Jordan
-    * Licensed under the MIT, GPL licenses.
-    */
-    function getCookies() {
-
-		var attributes = [ 'name', 'value', 'expires', 'path', 'domain',
-				'secure', 'httponly' ];
-		var splitter = /,\s(?=\w+=\w)/g;
-		
-		var cookies = [];
-		
-		if (document.cookie != '') { 
-			var cookie_array = document.cookie.split(splitter);
-		
-			cookie_array.forEach(function(e) {
-				var params = e.split('; ');
-		
-				params.forEach(function(param) {
-					param = param.split('=');
-					var key = param[0];
-					var value = param[1];
-		
-					if (attributes.indexOf(key) > 0) {
-						if (key === 'expires') {
-								cookie[key] = new Date(value);
-							} else {
-								cookie[key] = value || true;
-							}
-						} else {
-							cookie.name = key;
-							cookie.value = value;
-						}
-					});
-		
-					cookies.push(cookie);
-			});
-		}
-		
-		return cookies;
-	}
     
     function getDOMStorageItems(storage) {
     	var items = [];
@@ -728,18 +694,33 @@ window.JsHybugger = (function() {
 	}
 	
 	// intercept openDatabase method calls and notify jsHybugger
+	var addOpenDatabaseInfo = function(db,name,version,description,size,cb) {
+		console.log("addOpenDatabaseInfo() called: " + name);
+		databases.push({database:db, id:new String(databases.length),domain:location.hostname,name:name, version:version});
+		sendToDebugService('Database.addDatabase', {database:{id:new String(databases.length-1),domain:location.hostname,name:name, version:version}});
+	};
 	if (window.openDatabase) {
 		window.JsHybugger_openDatabase = window.openDatabase;
 		window.openDatabase = function(name,version,description,size,cb) {
 			var db = window.JsHybugger_openDatabase(name,version,description,size,cb);
-			databases.push({database:db, id:new String(databases.length),domain:location.hostname,name:name, version:version});
-			
-			sendToDebugService('Database.addDatabase', {database:{id:new String(databases.length-1),domain:location.hostname,name:name, version:version}});
+			addOpenDatabaseInfo(db,name,version,description,size,cb);
 			return db;
 		};
 	}
-	
-	
+	// watch set actions on openDatabase and rebind jsHybugger
+	window.__defineSetter__("openDatabase", function(openFctn){
+		//console.log("window.openDatabase setter: " + openFctn.toString());
+		this.JsHybugger_openDatabase = function(name,version,description,size,cb) {
+			var db = openFctn(name,version,description,size,cb);
+			addOpenDatabaseInfo(db,name,version,description,size,cb);
+			return db;
+		};
+    });
+	window.__defineGetter__("openDatabase", function(){
+		//console.log("window.openDatabase getter: " + (this.JsHybugger_openDatabase ? this.JsHybugger_openDatabase : "not set"));
+		return this.JsHybugger_openDatabase;
+    });
+
     /*
      * ---- begin public API functions
      */ 
@@ -813,6 +794,18 @@ window.JsHybugger = (function() {
         });
     };
     
+    /**
+     * Opens a WebSQL database, and inform jsHybugger about new database
+     * Call this method if you use phonegap together with jshybugger.
+     * This function will just forward the call to the underlying window.openDatabase() implementation. 
+     */
+    function openDatabase(name,version,description,size,cb) {
+		var db = window.openDatabase(name,version,description,size,cb);
+		addOpenDatabaseInfo(db,name,version,description,size,cb);
+		return db;
+    }
+    
+    
     // register on load event handler
     window.addEventListener("load", pageLoaded, false);
     
@@ -826,7 +819,8 @@ window.JsHybugger = (function() {
     	popStack : popStack,
     	reportException : reportException,
     	track : track,
-    	processMessages : processMessages
+    	processMessages : processMessages,
+    	openDatabase : openDatabase
     }
 
 })();

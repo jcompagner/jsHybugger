@@ -140,7 +140,7 @@ public class RuntimeMsgHandler extends AbstractMsgHandler {
 		JSONObject params = message.getJSONObject("params");
 		
 		debugSession.getBrowserInterface().sendMsgToWebView(
-				"eval",
+				"evaluate",
 				new JSONObject().put("params", params),
 				new ReplyReceiver() {
 

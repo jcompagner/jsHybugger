@@ -38,6 +38,7 @@ import org.mozilla.javascript.ast.LabeledStatement;
 import org.mozilla.javascript.ast.Name;
 import org.mozilla.javascript.ast.NodeVisitor;
 import org.mozilla.javascript.ast.NumberLiteral;
+import org.mozilla.javascript.ast.ObjectLiteral;
 import org.mozilla.javascript.ast.PropertyGet;
 import org.mozilla.javascript.ast.ReturnStatement;
 import org.mozilla.javascript.ast.Scope;
@@ -391,6 +392,11 @@ public class DebugInstrumentator implements NodeVisitor {
 				Name vArg = new Name();
 				vArg.setIdentifier(((VariableLiteral) arg).getVarName());
 				call.addArgument(vArg);
+				
+			} else {
+				KeywordLiteral bArg = new KeywordLiteral();
+				bArg.setType(Token.NULL);
+				call.addArgument(bArg);
 			}
 		}
 		
