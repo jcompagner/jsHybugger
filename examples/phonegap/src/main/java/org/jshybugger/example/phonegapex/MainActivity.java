@@ -18,6 +18,7 @@ public class MainActivity extends DroidGap {
 		// load html page via JsHybugger content provider 
 		// example for local page loading	
 		super.loadUrl("content://jsHybugger.org/file:///android_asset/www/index.html");
+		//super.loadUrl("content://jsHybugger.org/http://jshybugger.org/angular-phonecat/app/index.html");
 	}
 
 	@Override

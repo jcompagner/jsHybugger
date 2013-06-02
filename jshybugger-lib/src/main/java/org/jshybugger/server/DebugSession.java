@@ -16,10 +16,9 @@
 package org.jshybugger.server;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -34,6 +33,8 @@ import org.webbitserver.WebSocketConnection;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.util.Base64;
+import android.util.Base64OutputStream;
 import android.util.Log;
 
 
@@ -212,28 +213,43 @@ public class DebugSession extends BaseWebSocketHandler {
 	 * Load script resource by URI.
 	 *
 	 * @param scriptUri the script URI to load
+	 * @param encode TODO
 	 * @return the javascript content 
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	public String loadScriptResourceById(String scriptUri) throws IOException {
+	public String loadScriptResourceById(String scriptUri, boolean encode) throws IOException {
 		
 		Log.d(TAG, "loadScriptResourceById: " + scriptUri);
 		
-		InputStream resource = openInputFile(scriptUri);
-		BufferedReader br = new BufferedReader(new InputStreamReader(resource));
+		BufferedInputStream inputStream = new BufferedInputStream(openInputFile(scriptUri));
+		ByteArrayOutputStream byteOut = new ByteArrayOutputStream(inputStream.available());
+		OutputStream outStream = null;
 		
-		String strLine;
-		StringBuffer sb = new StringBuffer();
-
-		//Read File Line By Line
-		while ((strLine = br.readLine()) != null)   {
-			sb.append(strLine);
-			sb.append("\r\n");
+		if (encode) {
+			outStream = new Base64OutputStream(byteOut, Base64.DEFAULT);
+		} else {
+			outStream = byteOut;
 		}
-		br.close();
-		Log.d(TAG, "loadScriptResourceById - length: " + sb.length());
 		
-		return sb.toString();
+		String resourceContent=null;
+		try {
+			byte bytesRead[] = new byte[4096];
+			int numBytes=0;
+			
+			//Read File Line By Line
+			while ((numBytes = inputStream.read(bytesRead)) > 0)   {
+				outStream.write(bytesRead,0,numBytes);
+			}
+		} finally {
+			resourceContent = byteOut.toString();
+			
+			inputStream.close();
+			outStream.close();
+		}
+		
+		Log.d(TAG, "loadScriptResourceById - length: " + resourceContent.length());
+		
+		return resourceContent;
 	}
 	
 	/**

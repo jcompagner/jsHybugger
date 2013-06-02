@@ -200,6 +200,34 @@ window.JsHybugger = (function() {
 	        			doEval(null, cmd);
 	        		}, true);
 	        		
+	        	case 'releaseObjectGroup':
+	        		return runSafe('releaseObjectGroup', function() {
+	        			for (p in globalWatches) {
+	        				delete globalWatches[p];
+	        			}
+	        		}, true);
+	        	
+	        	case 'getResourceContent':
+	        		return runSafe('getResourceContent', function() {
+	        			
+	        			// determine if request resource is an image, then use content encoding, in all other cases don't encode
+	        	    	var imgs = document.getElementsByTagName("img"); 
+	        	    	for (var i = 0; i < imgs.length; i++) {
+	        	    		var src = imgs[i].src;
+	        	    		if (src && src.indexOf(cmd.data.params.url) >= 0) {
+	        	    			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({base64Encoded : true}));
+	        	    			return;
+	        	    		}
+	        	    	}
+    	    			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({base64Encoded : false}));
+	        	    	
+	        		}, true);
+	        		
+	        	case 'getResourceTree':
+	        		return runSafe('getResourceTree', function() {
+	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(getResourceTree(cmd)));
+	        		}, true);
+	        		
 	        	case 'getDOMStorageItems':
 	        		return runSafe('getDOMStorageItems', function() {
 	        			var response = { entries : getDOMStorageItems(cmd.data.params.storageId.isLocalStorage ? localStorage : sessionStorage) };
@@ -374,6 +402,81 @@ window.JsHybugger = (function() {
 	        		console.warn('JsHybugger unknown command received:' + cmd.command);
 	        }
 		}
+    }
+    
+    /**
+     * Handles "getResourceTree" messages and send back result to debugger client.
+	 * @param {object} cmd message from debug server
+     */
+    function getResourceTree(cmd) {
+    
+    	var prot = 'content://jsHybugger.org/';
+    	var result = {
+    		frameTree : {
+    			frame : {
+    				id : '3130.1',
+    				url : document.location.href.indexOf(prot) == 0 ? document.location.href.substr(prot.length) : document.location.href,
+    				loaderId: '3130.2',
+    				securityOrigin : document.location.origin,
+    				mimeType : 'text/html'
+    			},
+    			resources : []
+    		}
+    	};
+    	
+    	// get all script resources
+    	var scripts = document.getElementsByTagName("script"); 
+    	for (var i = 0; i < scripts.length; i++) {
+    		var src = scripts[i].src;
+    		if (src.indexOf('jshybugger.js')>=0) {
+    			continue;
+    		}
+    		result.frameTree.resources.push({
+    			// remove content provider
+    			url : src.indexOf(prot) == 0 ? src.substr(prot.length) : src,
+    			type : 'Script',
+    			mimeType : 'text/x-js'
+    		});
+    	}
+		
+    	// get all image resources
+    	var imgs = document.getElementsByTagName("img"); 
+    	for (var i = 0; i < imgs.length; i++) {
+    		var src = imgs[i].src;
+    		var mimeType='image/png';
+    		
+    		if (src.indexOf("data:")>=0) {
+    			mimeType = src.substring(src.indexOf(":")+1, src.indexOf(";")); 
+    			
+    		} else {
+    			
+    			mimeType = 'image/' + src.substr(src.lastIndexOf(".")+1); 
+    		}
+    		
+    		result.frameTree.resources.push({
+    			// remove content provider
+    			url : src.indexOf(prot) == 0 ? src.substr(prot.length) : src,
+    			type : 'Image',
+    			mimeType : mimeType
+    		});
+    	}
+
+    	// get all stylesheet resources
+    	/* disabled - not supported
+    	var styles = document.getElementsByTagName("link"); 
+    	for (var i = 0; i < styles.length; i++) {
+    		var src = styles[i].href;
+    		if (src && styles[i].rel == 'stylesheet') {
+	    		result.frameTree.resources.push({
+	    			// remove content provider
+	    			url : src.indexOf(prot) == 0 ? src.substr(prot.length) : src,
+	    			type : 'Stylesheet',
+	    			mimeType : 'text/css'
+	    		});
+    		}
+    	}
+        */
+    	return result;
     }
     
     /**
@@ -694,8 +797,8 @@ window.JsHybugger = (function() {
 	}
 	
 	// intercept openDatabase method calls and notify jsHybugger
-	var addOpenDatabaseInfo = function(db,name,version,description,size,cb) {
-		console.log("addOpenDatabaseInfo() called: " + name);
+	var addWebSQLDatabaseInfo = function(db,name,version,description) {
+		console.log("addWebSQLDatabaseInfo() called: " + name);
 		databases.push({database:db, id:new String(databases.length),domain:location.hostname,name:name, version:version});
 		sendToDebugService('Database.addDatabase', {database:{id:new String(databases.length-1),domain:location.hostname,name:name, version:version}});
 	};
@@ -703,7 +806,7 @@ window.JsHybugger = (function() {
 		window.JsHybugger_openDatabase = window.openDatabase;
 		window.openDatabase = function(name,version,description,size,cb) {
 			var db = window.JsHybugger_openDatabase(name,version,description,size,cb);
-			addOpenDatabaseInfo(db,name,version,description,size,cb);
+			addWebSQLDatabaseInfo(db,name,version,description,size,cb);
 			return db;
 		};
 	}
@@ -712,7 +815,7 @@ window.JsHybugger = (function() {
 		//console.log("window.openDatabase setter: " + openFctn.toString());
 		this.JsHybugger_openDatabase = function(name,version,description,size,cb) {
 			var db = openFctn(name,version,description,size,cb);
-			addOpenDatabaseInfo(db,name,version,description,size,cb);
+			addWebSQLDatabaseInfo(db,name,version,description,size,cb);
 			return db;
 		};
     });
@@ -794,17 +897,6 @@ window.JsHybugger = (function() {
         });
     };
     
-    /**
-     * Opens a WebSQL database, and inform jsHybugger about new database
-     * Call this method if you use phonegap together with jshybugger.
-     * This function will just forward the call to the underlying window.openDatabase() implementation. 
-     */
-    function openDatabase(name,version,description,size,cb) {
-		var db = window.openDatabase(name,version,description,size,cb);
-		addOpenDatabaseInfo(db,name,version,description,size,cb);
-		return db;
-    }
-    
     
     // register on load event handler
     window.addEventListener("load", pageLoaded, false);
@@ -820,7 +912,7 @@ window.JsHybugger = (function() {
     	reportException : reportException,
     	track : track,
     	processMessages : processMessages,
-    	openDatabase : openDatabase
+    	addWebSQLDatabaseInfo : addWebSQLDatabaseInfo
     }
 
 })();

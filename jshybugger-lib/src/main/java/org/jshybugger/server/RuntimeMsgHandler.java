@@ -62,7 +62,7 @@ public class RuntimeMsgHandler extends AbstractMsgHandler {
 			
 		} else if (method.equals("releaseObjectGroup")) {
 			
-			sendAckMessage(conn, message);
+			releaseObjectGroup(conn, message);
 			
 		} else if (method.equals("getProperties")) {
 			
@@ -79,6 +79,24 @@ public class RuntimeMsgHandler extends AbstractMsgHandler {
 		} else {
 			super.onReceiveMessage(conn, method, message);
 		}
+	}
+
+	private void releaseObjectGroup(final WebSocketConnection conn, final JSONObject message) throws JSONException {
+
+		debugSession.getBrowserInterface().sendMsgToWebView(
+				"releaseObjectGroup",
+				new JSONObject().put("params", message.getJSONObject("params")),
+				new ReplyReceiver() {
+
+			@Override
+			public void onReply(JSONObject data) throws JSONException {
+				
+				conn.send(new JSONStringer().object()
+						.key("id").value(message.getInt("id"))
+						.key("result").value(data.getJSONObject("result"))
+						.endObject().toString());
+				}
+		});		
 	}
 
 	private void callFunctionOn(final WebSocketConnection conn, final JSONObject message) throws JSONException {

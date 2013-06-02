@@ -15,6 +15,7 @@
  */
 package org.jshybugger.server;
 
+import java.io.IOException;
 import java.util.HashMap;
 
 import org.json.JSONException;
@@ -67,15 +68,11 @@ public class PageMsgHandler extends AbstractMsgHandler {
 			
 		} else if ("getResourceTree".equals(method)) {
 
-			// forward message to debug handler for processing
-			debugSession.getMessageHandler(DebuggerMsgHandler.HANDLER_NAME)
-					.onSendMessage(conn, "getResourceTree", message);
+			getResourceTree(conn, message);
 
 		} else if ("getResourceContent".equals(method)) {
 
-			// forward message to debug handler for processing
-			debugSession.getMessageHandler(DebuggerMsgHandler.HANDLER_NAME)
-					.onSendMessage(conn, "getResourceContent", message);
+			getResourceContent(conn, message);
 						
 		} else if ("reload".equals(method)) {
 			
@@ -86,6 +83,77 @@ public class PageMsgHandler extends AbstractMsgHandler {
 		}
 	}
 	
+	/**
+	 * Process "Page.getResourceContent" protocol messages.
+	 * Forwards the message to the WebView and returns the result to the debugger frontend. 
+	 *
+	 * @param conn the websocket connection
+	 * @param message the JSON message
+	 * @throws JSONException some JSON exception
+	 */
+	private void getResourceContent(final WebSocketConnection conn,
+			final JSONObject message) throws JSONException {
+		
+		final String url = message.getJSONObject("params").getString("url");
+		if (url.startsWith("data:")) {
+			
+			conn.send(new JSONStringer().object()
+					.key("id").value(message.getInt("id"))
+					.key("result").value(new JSONObject()
+						.put("content", url.substring(url.indexOf(",")+1))
+						.put("base64Encoded", url.substring(url.indexOf(";")+1).startsWith("base64")))
+					.endObject().toString());
+			
+		} else {
+			debugSession.getBrowserInterface().sendMsgToWebView(
+					"getResourceContent",
+					new JSONObject().put("params",message.getJSONObject("params")),
+					new ReplyReceiver() {
+	
+				@Override
+				public void onReply(JSONObject data) throws JSONException {
+					
+					try {
+						conn.send(new JSONStringer().object()
+								.key("id").value(message.getInt("id"))
+								.key("result").value(new JSONObject()
+									.put("content", debugSession.loadScriptResourceById(url, data.getBoolean("base64Encoded") ))
+									.put("base64Encoded", data.getBoolean("base64Encoded")))
+								.endObject().toString());
+						
+					} catch (IOException e) {
+						throw new JSONException(e.getMessage());
+					}
+				}
+			});		
+		}
+	}
+	
+	/**
+	 * Process "Page.getResourceTree" protocol messages.
+	 * Forwards the message to the WebView and returns the result to the debugger frontend. 
+	 *
+	 * @param conn the websocket connection
+	 * @param message the JSON message
+	 * @throws JSONException some JSON exception
+	 */
+	private void getResourceTree(final WebSocketConnection conn, final JSONObject message) throws JSONException {
+		
+		debugSession.getBrowserInterface().sendMsgToWebView(
+				"getResourceTree",
+				null,
+				new ReplyReceiver() {
+
+			@Override
+			public void onReply(JSONObject data) throws JSONException {
+				
+				conn.send(new JSONStringer().object()
+						.key("id").value(message.getInt("id"))
+						.key("result").value(data)
+						.endObject().toString());
+				}
+		});		
+	}	
 	
 	/**
 	 * Process "Page.reload" protocol messages.

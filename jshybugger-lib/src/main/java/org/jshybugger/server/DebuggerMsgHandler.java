@@ -88,9 +88,8 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			reply.put("id", message.getInt("id"));
 			try {
 				reply.put("result", new JSONObject().put("scriptSource", 
-						debugSession.loadScriptResourceById(message.getJSONObject("params").getString("scriptId")) ));
+						debugSession.loadScriptResourceById(message.getJSONObject("params").getString("scriptId"), false) ));
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			
@@ -197,61 +196,11 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			loadedScripts.clear();
 			sendGlobalObjectCleared(conn);
 			
-		} else if (method.equals("getResourceTree")) {
-			
-			sendResourceTree(conn, message);
-
-		} else if (method.equals("getResourceContent")) {
-			
-			sendResourceContent(conn, message);
-						
 		} else {
 			super.onSendMessage(conn, method, message);
 		}
 	}
 	
-	private void sendResourceContent(final WebSocketConnection conn,
-			final JSONObject message) throws JSONException {
-		
-		JSONObject reply = new JSONObject();
-		
-		reply.put("id", message.getInt("id"));
-		try {
-			reply.put("result", new JSONObject().put("content", 
-					debugSession.loadScriptResourceById(message.getJSONObject("params").getString("url")) ).put("base64Encoded", false));
-			
-		} catch (IOException e) {
-			throw new JSONException(e.getMessage());
-		}
-		
-		conn.send(reply.toString());
-	}
-
-	private void sendResourceTree(WebSocketConnection conn, JSONObject message) throws JSONException {
-		
-		JSONStringer result = new JSONStringer().object()
-			   .key("result").object()
-			      .key("frameTree").object()
-			         .key("frame").object()
-			            .key("id").value("3130.1")
-			            .key("url").value("http://localhost/index.html")
-			            .key("loaderId").value("3130.2")
-			            .key("securityOrigin").value("http://localhost")
-			            .key("mimeType").value("text/html")
-			         .endObject()
-			      .key("resources").array();
-		
-		for (String file : loadedScripts.keySet()) {
-			result.object()
-				.key("url").value(file)
-				.key("type").value("Script")
-				.key("mimeType").value("text/plain")
-			.endObject();
-		}
-		
-		conn.send(result.endArray().endObject().endObject().key("id").value(message.getInt("id")).endObject().toString());
-	}
-
 	/**
 	 * Send global object cleared.
 	 *
