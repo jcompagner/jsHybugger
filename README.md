@@ -13,7 +13,7 @@ jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.
 * View page resources (images, scripts, html)
 * Object inspection enhanced
  
-[Download preview version 1.1](http://jshybugger.org/download/jshybugger-bundle-1.1.0-SNAPSHOT_bundle.jar)
+[Download preview version 1.1](http://jshybugger.org/download/jshybugger-bundle-1.1.0-SNAPSHOT.jar)
 
 
 # [jsHybugger Debugger App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) 
