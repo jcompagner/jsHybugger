@@ -12,6 +12,7 @@ jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.
 * View/Edit/Delete WebSQL Database
 * View page resources (images, scripts, html)
 * Object inspection enhanced
+* Frontend upgrade to Chrome Dev Tools 27.0.1453.90
  
 [Download preview version 1.1](http://jshybugger.org/download/jshybugger-bundle-1.1.0-SNAPSHOT.jar)
 
