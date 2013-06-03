@@ -17,8 +17,6 @@ package org.jshybugger.server;
 
 import java.net.UnknownHostException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.json.JSONException;
 import org.json.JSONStringer;
@@ -38,8 +36,6 @@ public class DebugServer {
 
 	private static final String CHROME_DEVTOOLS_FRONTEND = "https://chrome-devtools-frontend.appspot.com/static/27.0.1453.90/devtools.html?ws=%s/devtools/page/%s";
 	private WebServer webServer;
-	private ExecutorService newFixedThreadPool;
-
 	private CountDownLatch debugServerStarted = new CountDownLatch(1);
 	
 	/**
@@ -50,18 +46,13 @@ public class DebugServer {
 	 * @throws UnknownHostException the unknown host exception
 	 */
 	public DebugServer( int port) throws UnknownHostException {
-		this(port, 1);
-	}
-
-	public DebugServer( int port, int numThreads) throws UnknownHostException {
 		
 		Thread webServerThread = new Thread(new Runnable() {
 
 			@Override
 			public void run() {
 		
-				newFixedThreadPool = Executors.newFixedThreadPool(2);
-				webServer = WebServers.createWebServer(newFixedThreadPool, 8888)
+				webServer = WebServers.createWebServer( 8888)
 	                .add("/", new HttpHandler() {
 	
 	                    @Override
@@ -115,7 +106,6 @@ public class DebugServer {
 	}
 
 	public void stop() {
-		newFixedThreadPool.shutdownNow();
 		webServer.stop();
 	}
 }

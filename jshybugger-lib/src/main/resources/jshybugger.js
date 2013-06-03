@@ -895,6 +895,9 @@ window.JsHybugger = (function() {
             url: filename,
             numLines: numLines
         });
+    	
+    	// process messages here to make sure all breakpoints are set  
+    	processMessages(false);
     };
     
     
