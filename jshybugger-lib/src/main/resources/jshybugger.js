@@ -76,7 +76,6 @@ window.JsHybugger = (function() {
     	xmlObj.onreadystatechange = function() {
      	   if(xmlObj.readyState == 4) {
 		      response = xmlObj.status == '200' && xmlObj.responseText && xmlObj.responseText.length > 0 ? xmlObj.responseText : null;
-		      xmlObj.close();
 		   }
 		}
 		xmlObj.open ('POST', 'http://localhost:8888/jshybugger/' + cmd, false);
