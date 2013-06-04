@@ -24,6 +24,7 @@ import org.json.JSONStringer;
 
 import android.util.Log;
 import android.util.SparseArray;
+import android.webkit.JavascriptInterface;
 
 /**
  * This class is the interface between the webview and the debugging service.
@@ -91,6 +92,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 * @param path the message handler name i.e. "Debugger.sendPaused"
 	 * @param data the JSON data
 	 */
+	@JavascriptInterface
 	public void sendToDebugService(String path, String data) {
 		
 		//Log.d(TAG, "sendToDebugService: " + data);
@@ -111,6 +113,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 * @param receiver an optional callback receiver
 	 * @throws JSONException some JSON exception occured
 	 */
+	@JavascriptInterface
 	public void sendMsgToWebView(String command, JSONObject data, ReplyReceiver receiver) throws JSONException {
 		
 		synchronized (messageQueue) {
@@ -138,6 +141,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 * @param replyId the reply id
 	 * @param data the data
 	 */
+	@JavascriptInterface
 	public void sendReplyToDebugService(int replyId, String data) {
 		
 		//Log.d(TAG, "sendReplyToDebugService: " +data);
@@ -159,6 +163,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 * @return the queued message
 	 * @throws InterruptedException the interrupted exception
 	 */
+	@JavascriptInterface
 	public String getQueuedMessage(boolean wait) throws InterruptedException {
 		synchronized (messageQueue) {
 			//Log.d(TAG, "getQueuedMessage");

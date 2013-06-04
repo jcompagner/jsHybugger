@@ -51,7 +51,7 @@ public class DebugServer {
 
 			@Override
 			public void run() {
-		
+				
 				webServer = WebServers.createWebServer( 8888)
 	                .add("/", new HttpHandler() {
 	
