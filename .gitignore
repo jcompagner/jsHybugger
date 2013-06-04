@@ -7,3 +7,7 @@ jshybugger-lib/target
 examples/webview/gen/
 examples/phonegap/gen/
 jshybugger-bundle/target/
+jshybugger-proxy/bin/
+jshybugger-proxy/target/
+jshybugger-proxy/gen/
+jshybugger-proxy/gen

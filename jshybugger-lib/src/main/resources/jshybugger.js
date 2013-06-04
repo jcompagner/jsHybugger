@@ -57,18 +57,15 @@ window.JsHybugger = (function() {
     	
 		var pushChannel = new XMLHttpRequest();
 		pushChannel.onreadystatechange = function() {
-		   if(pushChannel.readyState == 4) {
-		      if (pushChannel.status == '200') {
-				  if (pushChannel.responseText) {
-					  eval(pushChannel.responseText);
-				  }
-		    	  setTimeout(openPushChannel, 0);
-		      } else {
-		    	  setTimeout(openPushChannel, 1000);
-		      }
+		   if(pushChannel.readyState == 3) {
+			  if (pushChannel.responseText) {
+				  eval(pushChannel.responseText);
+			  }
+		   } else if (pushChannel.readyState == 4) {
+	    	  setTimeout(openPushChannel, 0);
 		   }
 		}
-		pushChannel.timeout = 7000;
+		pushChannel.timeout = 30000;
 		pushChannel.open('GET', 'http://localhost:8888/jshybugger/pushChannel', true);
 		pushChannel.send();
 	}
@@ -77,8 +74,9 @@ window.JsHybugger = (function() {
     	var response;
     	var xmlObj = new XMLHttpRequest();
     	xmlObj.onreadystatechange = function() {
-    	   if(xmlObj.readyState == 4) {
-		      response = xmlObj.status == '200' ? xmlObj.responseText : null;
+     	   if(xmlObj.readyState == 4) {
+		      response = xmlObj.status == '200' && xmlObj.responseText && xmlObj.responseText.length > 0 ? xmlObj.responseText : null;
+		      xmlObj.close();
 		   }
 		}
 		xmlObj.open ('POST', 'http://localhost:8888/jshybugger/' + cmd, false);
@@ -503,7 +501,7 @@ window.JsHybugger = (function() {
 				    };
 					if (expr && (oType == 'object')) {
 						result.value.objectId='stack:' + objectParams[1] + ":"+ varnames[i];
-						result.value.description = oVal && oVal.constructor ? oVal.constructor.name : oVal;
+						result.value.description = expr.constructor && expr.constructor.name ? expr.constructor.name : 'object';
 					} else {
 						result.value.value = expr;
 					}
@@ -549,7 +547,7 @@ window.JsHybugger = (function() {
 			    };
 				if (oVal && oType == 'object') {
 					result.value.objectId=cmd.data.objectId + "." + expr;
-					result.value.description = oVal && oVal.constructor ? oVal.constructor.name : oVal;
+					result.value.description = oVal.constructor && oVal.constructor.name ? oVal.constructor.name : 'object';
 				} else if (oType == 'function') {
 					result.value.description = oVal ? oVal.toString() : 'function';
 				} else {
@@ -592,7 +590,7 @@ window.JsHybugger = (function() {
             		
             		response.objectId = "stack:" + stack.depth + ":expr." + exprID;
             		if (response.type == 'object') {
-            			response.description = evalResult && evalResult.constructor ? evalResult.constructor.name : evalResult;
+            			response.description = evalResult.constructor ? evalResult.constructor.name : 'object';
             		} else {
             			response.description = "" + evalResult;
             		}

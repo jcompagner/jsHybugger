@@ -26,18 +26,19 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>	
-        <platform.version>10</platform.version>		<server_schema>http</server_schema>
+        <platform.version>17</platform.version>		<server_schema>http</server_schema>
 	</properties>
 
 	<modules>
 		<module>jshybugger-lib</module>
 		<module>jshybugger-bundle</module>
+		<module>jshybugger-proxy</module>
 		<module>examples</module>
 	</modules>
 
 	<dependencyManagement>
 		<dependencies>
-			<dependency>				<groupId>org.mozilla</groupId>				<artifactId>rhino</artifactId>				<version>1.7R4</version>			</dependency>			<dependency>				<groupId>org.webbitserver</groupId>				<artifactId>webbit</artifactId>				<version>0.4.14</version>			</dependency>			<dependency>				<groupId>io.netty</groupId>				<artifactId>netty</artifactId>				<version>3.6.3.Final</version>			</dependency>
+			<dependency>				<groupId>org.mozilla</groupId>				<artifactId>rhino</artifactId>				<version>1.7R4</version>			</dependency>			<dependency>				<groupId>org.webbitserver</groupId>				<artifactId>webbit</artifactId>				<version>0.4.15</version>			</dependency>			<dependency>				<groupId>io.netty</groupId>				<artifactId>netty</artifactId>				<version>3.6.5.Final</version>			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	
@@ -61,7 +62,8 @@
 					</configuration>
 				</plugin>
 				
-				<plugin>					<groupId>com.jayway.maven.plugins.android.generation2</groupId>					<artifactId>android-maven-plugin</artifactId>					<version>3.5.1</version>					<configuration>						<androidManifestFile>${project.basedir}/AndroidManifest.xml</androidManifestFile>						<assetsDirectory>${project.basedir}/assets</assetsDirectory>						<resourceDirectory>${project.basedir}/res</resourceDirectory>						<sdk>							<platform>${platform.version}</platform>						</sdk>						<undeployBeforeDeploy>false</undeployBeforeDeploy>					</configuration>					<extensions>true</extensions>				</plugin>				<!--This plugin's configuration is used to store Eclipse m2e settings 
+				<plugin>					<groupId>com.jayway.maven.plugins.android.generation2</groupId>					<artifactId>android-maven-plugin</artifactId>					<version>3.5.4-SNAPSHOT</version>					<configuration>						<androidManifestFile>${project.basedir}/AndroidManifest.xml</androidManifestFile>						<assetsDirectory>${project.basedir}/assets</assetsDirectory>						<resourceDirectory>${project.basedir}/res</resourceDirectory>						<sdk>							<platform>${platform.version}</platform>
+						</sdk>						<undeployBeforeDeploy>false</undeployBeforeDeploy>					</configuration>					<extensions>true</extensions>				</plugin>				<!--This plugin's configuration is used to store Eclipse m2e settings 
 					only. It has no influence on the Maven build itself. -->
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
@@ -91,5 +93,16 @@
 			</plugins>
 		</pluginManagement>
 	</build>
+
+	<pluginRepositories>
+  <pluginRepository>
+    <id>oss.sonatype.org-jayway-snapshots</id>
+    <name>Jayway OpenSource SNAPSHOTs on Sonatype.org</name>
+    <url>http://oss.sonatype.org/content/repositories/jayway-snapshots/</url>
+    <snapshots>
+      <enabled>true</enabled>
+    </snapshots>
+  </pluginRepository>
+</pluginRepositories>
 
 </project>

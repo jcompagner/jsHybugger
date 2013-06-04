@@ -21,7 +21,7 @@
 	<parent>
 		<groupId>org.jshybugger</groupId>
 		<artifactId>jshybugger-parent</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.1.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>jshybugger-proxy</artifactId>
@@ -72,7 +72,7 @@
 	</profiles>
 	
 	<build>
-		<finalName>1.0.2</finalName>
+		<finalName>1.1.0</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -105,8 +105,8 @@
 				<configuration>
 					<manifest>
 						<debuggable>true</debuggable>
-						<versionName>1.0.7</versionName>
-						<versionCode>7</versionCode>
+						<versionName>1.1.0</versionName>
+						<versionCode>8</versionCode>
 					</manifest>
 				</configuration>
 				<executions>

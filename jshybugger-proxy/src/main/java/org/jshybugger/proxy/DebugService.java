@@ -124,6 +124,7 @@ public class DebugService extends Service {
 			} else {
 			
 				String uri = req.uri();
+				//Log.d(TAG,  "START: " + req);
 				res.header("Access-Control-Allow-Origin", req.header("Origin"));
 				if (uri.endsWith("jshybugger.js")) {
 					res.header("Cache-control", "no-cache, no-store");
@@ -148,19 +149,17 @@ public class DebugService extends Service {
 					browserInterface.sendReplyToDebugService(jsonReq.getInt("arg0"), jsonReq.getString("arg1"));
 
 				} else if (uri.endsWith("getQueuedMessage")) {
-					JSONObject jsonReq = new JSONObject(req.body());
-					String queuedMessage = browserInterface.getQueuedMessage(jsonReq.getBoolean("arg0"));
+					res.chunked();
 					
-					if (queuedMessage != null) {
-						res.content(queuedMessage);
-					} else {
-						res.status(204);
-					}
+					JSONObject jsonReq = new JSONObject(req.body());
+					browserInterface.getQueuedMessage(res, jsonReq.getBoolean("arg0"));
+					return;
 					
 				} else if (uri.endsWith("pushChannel")) {
 
-					res.status(200);
+					res.chunked();
 					browserInterface.openPushChannel(res);
+					//Log.d(TAG,  "END: " + req);
 					return;
 					
 				} else {

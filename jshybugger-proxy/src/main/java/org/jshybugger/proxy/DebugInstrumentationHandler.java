@@ -44,7 +44,7 @@ public class DebugInstrumentationHandler extends SimpleChannelHandler {
 		}
 
 		HttpRequest msg = (HttpRequest) e.getMessage();
-		requestURI = msg.getUri();
+		requestURI = "http://localhost:8080" + msg.getUri();
 		requestMethod = msg.getMethod().getName();
 		
 		try {

@@ -15,11 +15,13 @@
  */
 package org.jshybugger.proxy;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.jshybugger.server.AbstractBrowserInterface;
 import org.webbitserver.HttpResponse;
+
+import android.util.Log;
 
 /**
  * This class is the interface between the browser and the debugging service.
@@ -28,55 +30,78 @@ import org.webbitserver.HttpResponse;
 public class JSDInterface extends AbstractBrowserInterface {
 
 	private boolean notifyBrowser = false;
-	private Timer timer = null;
+	private HttpResponse response;
+	/** The logging TAG */
+	private static final String TAG = "JSDInterface";
+	private ExecutorService executorService;
 	
 	/**
 	 * Instantiates a new jSD interface.
 	 */
 	public JSDInterface() {
 		super(5000);
-		this.timer = new Timer();
+		executorService = Executors.newFixedThreadPool(1);
 	}
 		
 
 	@Override
 	public void notifyBrowser() {
 		synchronized (this) {
-			notifyBrowser = true;
-			notifyAll();
+			if (response != null) {
+			//	Log.d(TAG, "notifyBrowser(): " +response);
+				writeFinalChunk(response, "JsHybugger.processMessages(false);");
+				response = null;
+			} else {
+				notifyBrowser = true;
+			}
+			return;
 		}
 	}
 
-	public void openPushChannel(final HttpResponse response) {
+	public void openPushChannel(final HttpResponse res) {
 		synchronized (this) {
 			if (notifyBrowser) {
-				response.content("JsHybugger.processMessages(false);");
-				response.end();
+			//	Log.d(TAG, "notifyBrowser(openPushChannel): " + res);
+				writeFinalChunk(res, "JsHybugger.processMessages(false);");
 				notifyBrowser=false;
-				return;
+				response=null;
+			} else {
+				response = res;
 			}
-			
-			timer.schedule(new TimerTask() {
-	            @Override
-	            public void run() {
-	            	synchronized (JSDInterface.this) {
-	            		try {
-							JSDInterface.this.wait(maxWaitTime);
-							if (notifyBrowser) {
-								response.content("JsHybugger.processMessages(false);");
-								notifyBrowser=false;
-							}
-						} catch (InterruptedException e) {
-						} finally {
-							response.end();
-						}
-	            	}
-	            }
-	        }, 0);
 		}
 	}
 
+	private void writeFinalChunk(HttpResponse res, String data) {
+		//Log.d(TAG, "writeFinalChunk: " + data);
+		if (data != null) {
+			res.write(data);
+		}
+		res.write("");
+		res.end();
+	}
+
+	public void getQueuedMessage(final HttpResponse res, final boolean wait) throws InterruptedException {
+		if (wait) {
+		
+			executorService.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					try {
+						writeFinalChunk(res, JSDInterface.this.getQueuedMessage(true));
+					} catch (InterruptedException e) {
+						writeFinalChunk(res, null);
+					}
+				}
+				
+			});
+		} else {
+			writeFinalChunk(res, super.getQueuedMessage(false));
+		}
+	}
+
+
 	public void stop() {
-		timer.cancel();
+		executorService.shutdownNow();
 	}
 }

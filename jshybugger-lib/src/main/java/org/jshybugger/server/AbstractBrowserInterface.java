@@ -93,7 +93,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 */
 	public void sendToDebugService(String path, String data) {
 		
-		//Log.d(TAG, "sendToDebugService");
+		//Log.d(TAG, "sendToDebugService: " + data);
 		try {
 			JSONObject msg = new JSONObject(data);
 			debugSession.sendMessage(path, msg);
@@ -140,7 +140,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 */
 	public void sendReplyToDebugService(int replyId, String data) {
 		
-		//Log.d(TAG, "sendReplyToDebugService");
+		//Log.d(TAG, "sendReplyToDebugService: " +data);
 		ReplyReceiver rec = replyReceivers.get(replyId);
 		if (rec != null) {
 			try {
