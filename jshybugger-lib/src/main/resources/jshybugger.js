@@ -135,8 +135,28 @@ window.JsHybugger = (function() {
             window.console = {};
         }
         
-        ['info', 'log', 'warn', 'error'].forEach(function(f) {
+        ['info', 'log', 'warn', 'error', 'debug', 'trace','group','groupEnd'].forEach(function(f) {
             var oldFunc = window.console[f];
+            var levels = {
+            	log : 'log',
+            	warn : 'warning',
+            	info : 'info', 
+            	error : 'error',
+            	debug : 'debug',
+            	trace : 'log',
+            	group : 'log',
+            	groupEnd : 'log'
+            };
+            var types = {
+            	info : 'log',	
+            	log : 'log',	
+            	warn : 'log',	
+            	debug : 'log',	
+            	error : 'log',	
+            	trace : 'trace',
+            	group : 'startGroup',
+            	groupEnd : 'endGroup'
+            };
             
             window.console[f] = function() {
 			
@@ -144,9 +164,52 @@ window.JsHybugger = (function() {
                 /* Write to local console first */
                 oldFunc && oldFunc.apply(window.console, args);
                 
+                var parameters = [];
+                for (var i=0; args && i<args.length; i++) {
+                	var type = typeof(args[i]);
+                	var arg = {
+                		type : type
+                	};
+                	if (type == 'object') {
+                		arg.description = arg.className = args[i].constructor &&  args[i].constructor.name ?  args[i].constructor.name : 'Object';
+                		arg.objectId = "not_supported";
+                		
+                		arg.preview = { lossless : true,
+                            overflow : false,
+                            properties : [ ]
+                        };
+                		
+                		for (var prop in args[i]) {
+                			var propVal = args[i][prop];
+                			var propType = typeof(propVal);
+                			
+                			arg.preview.properties.push({ 
+                				name : prop,
+                                type : propType == 'object' && propVal.constructor &&  propVal.constructor.name ? propVal.constructor.name : propType,
+                                value : propVal
+                            });
+                		}
+                		
+                    } else {
+                		arg.value = args[i]; 		
+                    }
+
+                	parameters.push(arg);
+                }
+
+                
                 sendToDebugService('Console.messageAdded', { 
-                    type: f.toUpperCase(),
-                    message: args.toString()
+                	message : {
+                		level: levels[f],
+                		line : lastLine,
+                		parameters : parameters,
+                		repeatCount : 1,
+                		source : "console-api",
+                		stackTrace : getStacktrace(),
+                		text : args && args.length>0 ? args[0] : '',
+                		type : types[f],
+                		url : lastFile
+                	}
                 });
             };
         });
@@ -474,6 +537,27 @@ window.JsHybugger = (function() {
     	}
         */
     	return result;
+    }
+    
+    function getStacktrace() {
+    	var stacktrace = [];
+    	
+    	if (callStack) {
+    		for (var i=callStack.length-1; i>=0; i--) {
+    			var stack = callStack[i];
+//    			if(stack.file.indexOf("console.") < 0) {
+    				
+	    			stacktrace.push( {
+	    				columnNumber : 0,
+	    				functionName : stack.name,
+	    				lineNumber : stack.line+2,
+	    				url: stack.file
+	    			});
+//    			}
+    		}
+    	}
+    	
+        return stacktrace;
     }
     
     /**

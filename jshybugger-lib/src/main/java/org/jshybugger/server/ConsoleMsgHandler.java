@@ -122,14 +122,8 @@ public class ConsoleMsgHandler extends AbstractMsgHandler {
 		
 		if (conn != null) {
 			conn.send(new JSONStringer().object()
-				.key("method").value("Console.messageAdded")
-					.key("params").object()
-					    .key("message").object() 
-					    	.key("level").value(msg.getString("type").toLowerCase(Locale.US))
-					    	.key("source").value("javascript")
-					    	.key("text").value(msg.getString("message"))
-					    .endObject()
-					.endObject()
+					.key("method").value("Console.messageAdded")
+					.key("params").value(msg)
 				.endObject()
 				.toString());
 		} else {
