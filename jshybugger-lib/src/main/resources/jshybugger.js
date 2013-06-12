@@ -919,6 +919,10 @@ window.JsHybugger = (function() {
     });
 	window.__defineGetter__("openDatabase", function(){
 		var openDB = this.JsHybugger_openDatabase;
+		if (!openDB) {
+			return openDB;
+		}
+		
 		return function(name,version,description,size,cb) {
 			var db = openDB(name,version,description,size,cb);
 			addWebSQLDatabaseInfo(db,name,version,description,size,cb);
