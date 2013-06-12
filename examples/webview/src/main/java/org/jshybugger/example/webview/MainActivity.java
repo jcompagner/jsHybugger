@@ -31,12 +31,6 @@ public class MainActivity extends Activity {
 		    }
 		});
 		
-		CookieSyncManager.createInstance(this);
-		CookieManager.getInstance().setAcceptCookie(true);
-		CookieManager.setAcceptFileSchemeCookies(true);
-		CookieManager.getInstance().setCookie("MyCookie2", "MyVal2");
-		CookieSyncManager.getInstance().startSync();
-		
 		WebSettings settings = webView.getSettings();
 		settings.setJavaScriptEnabled(true);
 		settings.setAllowFileAccess(true);

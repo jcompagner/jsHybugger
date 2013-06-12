@@ -16,15 +16,7 @@ $(document).ready(function() {
     $('#removeKey').click(removeKey);
     $('#clear').click(clear);
     
-	window.JsHybugger_localStorage=window.localStorage;
-	window.__defineGetter__("localStorage", function(){
-        return JsHybugger_localStorage;
-    });
-	window.__defineSetter__("localStorage", function(v){
-        JsHybugger_localStorage=v;
-    });
-	
-    db = openDatabase('mydb', '1.0', 'Test DB', 50 * 1024 * 1024);
+    db = window.openDatabase('mydb', '1.0', 'Test DB', 50 * 1024 * 1024);
     db.transaction(function(tx) {
         tx.executeSql("CREATE TABLE IF NOT EXISTS " +
                       "todo(ID INTEGER PRIMARY KEY ASC, todo TEXT, added_on DATETIME)", []);
