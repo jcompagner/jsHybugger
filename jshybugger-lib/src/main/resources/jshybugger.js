@@ -911,24 +911,19 @@ window.JsHybugger = (function() {
 	};
 	if (window.openDatabase) {
 		window.JsHybugger_openDatabase = window.openDatabase;
-		window.openDatabase = function(name,version,description,size,cb) {
-			var db = window.JsHybugger_openDatabase(name,version,description,size,cb);
-			addWebSQLDatabaseInfo(db,name,version,description,size,cb);
-			return db;
-		};
 	}
+
 	// watch set actions on openDatabase and rebind jsHybugger
 	window.__defineSetter__("openDatabase", function(openFctn){
-		//console.log("window.openDatabase setter: " + openFctn.toString());
-		this.JsHybugger_openDatabase = function(name,version,description,size,cb) {
-			var db = openFctn(name,version,description,size,cb);
+		window.JsHybugger_openDatabase = openFctn;
+    });
+	window.__defineGetter__("openDatabase", function(){
+		var openDB = this.JsHybugger_openDatabase;
+		return function(name,version,description,size,cb) {
+			var db = openDB(name,version,description,size,cb);
 			addWebSQLDatabaseInfo(db,name,version,description,size,cb);
 			return db;
 		};
-    });
-	window.__defineGetter__("openDatabase", function(){
-		//console.log("window.openDatabase getter: " + (this.JsHybugger_openDatabase ? this.JsHybugger_openDatabase : "not set"));
-		return this.JsHybugger_openDatabase;
     });
 
     /*
