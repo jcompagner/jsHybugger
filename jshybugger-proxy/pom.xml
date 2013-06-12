@@ -72,7 +72,7 @@
 	</profiles>
 	
 	<build>
-		<finalName>1.1.0</finalName>
+		<finalName>1.1.1</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -104,9 +104,9 @@
 				<extensions>true</extensions>
 				<configuration>
 					<manifest>
-						<debuggable>true</debuggable>
-						<versionName>1.1.0</versionName>
-						<versionCode>8</versionCode>
+						<debuggable>false</debuggable>
+						<versionName>1.1.1</versionName>
+						<versionCode>10</versionCode>
 					</manifest>
 				</configuration>
 				<executions>

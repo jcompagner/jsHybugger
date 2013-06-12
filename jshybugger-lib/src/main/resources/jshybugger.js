@@ -29,6 +29,7 @@ window.JsHybugger = (function() {
     var blockModeActive = false;
 	var databases = [];
 	var globalWatches = {};
+	var continueToLocation;
 	
 	if (window['JsHybuggerNI'] === undefined) {
 		console.info("JsHybugger loaded outside a native app.")
@@ -135,7 +136,7 @@ window.JsHybugger = (function() {
             window.console = {};
         }
         
-        ['info', 'log', 'warn', 'error', 'debug', 'trace','group','groupEnd'].forEach(function(f) {
+        ['info', 'log', 'warn', 'error', 'debug', 'trace','group','groupEnd','assert'].forEach(function(f) {
             var oldFunc = window.console[f];
             var levels = {
             	log : 'log',
@@ -145,7 +146,8 @@ window.JsHybugger = (function() {
             	debug : 'debug',
             	trace : 'log',
             	group : 'log',
-            	groupEnd : 'log'
+            	groupEnd : 'log',
+            	assert : 'error'	
             };
             var types = {
             	info : 'log',	
@@ -155,14 +157,25 @@ window.JsHybugger = (function() {
             	error : 'log',	
             	trace : 'trace',
             	group : 'startGroup',
-            	groupEnd : 'endGroup'
+            	groupEnd : 'endGroup',
+            	assert : 'assert'
             };
             
             window.console[f] = function() {
 			
                 var args = Array.prototype.slice.call(arguments);
+            	
                 /* Write to local console first */
                 oldFunc && oldFunc.apply(window.console, args);
+
+                // special handling for assert calls
+                if (f == 'assert') {
+            		if (args[0] === true) {
+            			return;
+        			}
+        			// else remove first item 
+        			args = args.splice(1,1);
+            	}
                 
                 var parameters = [];
                 for (var i=0; args && i<args.length; i++) {
@@ -322,6 +335,17 @@ window.JsHybugger = (function() {
 	        			getProperties(cmd);
 	        		}, true);
 	        		        		
+	            case 'continue-to':
+	            	
+	        		return runSafe('continue-to',function() {
+	        			continueToLocation = {
+	        				file : cmd.data.url,
+	        				line : cmd.data.lineNumber
+	        			};
+	        			
+		                JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ }));
+	        		}, false);
+	        			
 	            case 'breakpoint-set':
 	        		return runSafe('breakpoint-set',function() {
 		                var file = cmd.data.url;
@@ -550,7 +574,7 @@ window.JsHybugger = (function() {
 	    			stacktrace.push( {
 	    				columnNumber : 0,
 	    				functionName : stack.name,
-	    				lineNumber : stack.line+2,
+	    				lineNumber : i==callStack.length-1 ? lastLine+1 : stack.line+2,
 	    				url: stack.file
 	    			});
 //    			}
@@ -776,6 +800,8 @@ window.JsHybugger = (function() {
      * Sends "Debugger.paused" message to debug server.
      */
     function sendDebuggerPaused(reason, auxData) {
+    	// clear continue to location information on pause
+    	continueToLocation=null;
     	var callFrames = prepareStackInfo();
         sendToDebugService('Debugger.paused', {
             reason: reason,
@@ -933,12 +959,25 @@ window.JsHybugger = (function() {
         
         var isBreakpoint = (breakpoints[file] && breakpoints[file][line]) || /* breakpoint set? */
                            isDebuggerStatement ||                            /* break on debugger; keyword? */
-                           shouldBreak(callStackDepth);                      /* break on next (in|over|out) */
+                           shouldBreak(callStackDepth) ||                      /* break on next (in|over|out) */
+                           (continueToLocation && continueToLocation.file == file && continueToLocation.line == line);
 
         if (!isBreakpoint) {
             return;
         }
 
+        if (breakpoints[file][line] && breakpointsById[breakpoints[file][line]].condition) {
+        	var cond = breakpointsById[breakpoints[file][line]].condition;
+        	try {
+	        	if (!callStack[callStackDepth-1].evalScope(cond)) {
+	        		return;
+	        	}
+        	} catch (ex) {
+        		console.error('invalid breakpoint condition: ' + ex);
+        		return;
+        	}
+        }
+        
     	sendDebuggerPaused('other', { });
     	processMessages(true);
     };

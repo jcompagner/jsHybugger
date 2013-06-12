@@ -16,16 +16,18 @@
 package org.jshybugger.server;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.webbitserver.WebSocketConnection;
+
+import android.util.Log;
 
 
 /**
@@ -38,11 +40,14 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 	/** The methods available. */
 	private final HashMap<String,Boolean> METHODS_AVAILABLE = new HashMap<String, Boolean>(); 
 	
+	/** The Constant TAG. */
+	private static final String TAG = "DebuggerMsgHandler";
+	
 	/** The loaded scripts. */
 	private Map<String,Integer> loadedScripts = new HashMap<String,Integer>();
 	
 	/** The script breakpoints. */
-	private Map<String,List<Integer>> scriptBreakpoints =  new HashMap<String,List<Integer>>();
+	private Map<String,Set<Breakpoint>> scriptBreakpoints =  new HashMap<String,Set<Breakpoint>>();
 	
 	public final static String HANDLER_NAME = "Debugger";
 	
@@ -95,15 +100,20 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			
 			conn.send(reply.toString());
 			
+		} else if ("continueToLocation".equals(method)) {
+			
+			JSONObject location = message.getJSONObject("params").getJSONObject("location");
+			continueToLocation(conn, message.getInt("id"), location.getString("scriptId"), location.getInt("lineNumber"));
+
 		} else if ("setBreakpointByUrl".equals(method)) {
 			
 			JSONObject params = message.getJSONObject("params");
-			setBreakpointByUrl(conn, message.getInt("id"), params.getString("url"), params.getInt("lineNumber"), false);
+			setBreakpointByUrl(conn, message.getInt("id"), params.getString("url"), params.getInt("lineNumber"), params.getString("condition"), false);
 			
 		} else if ("setBreakpoint".equals(method)) {
 
 			JSONObject params = message.getJSONObject("params");
-			setBreakpointByUrl(conn, message.getInt("id"), params.getJSONObject("location").getString("scriptId"), params.getJSONObject("location").getInt("lineNumber"), true);
+			setBreakpointByUrl(conn, message.getInt("id"), params.getJSONObject("location").getString("scriptId"), params.getJSONObject("location").getInt("lineNumber"), params.getString("condition"), true);
 			
 		} else if ("removeBreakpoint".equals(method)) {
 			
@@ -135,6 +145,34 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 		} else {
 			super.onReceiveMessage(conn, method, message);
 		}
+	}
+
+	/**
+	 * Process "Debugger.continueToLocation" protocol messages.
+	 * Forwards the message to the WebView and returns the result to the debugger frontend. 
+	 *
+	 * @param conn the websocket connection
+	 * @param message the JSON message
+	 * @throws JSONException some JSON exception
+	 */
+	private void continueToLocation(final WebSocketConnection conn, final int id, final String url, final int lineNumber) throws JSONException {
+		debugSession.getBrowserInterface().sendMsgToWebView(
+				"continue-to",
+				new JSONObject().put("url", url).put(
+						"lineNumber", lineNumber),
+				new ReplyReceiver() {
+
+			@Override
+			public void onReply(JSONObject data) throws JSONException {
+				
+				JSONStringer res = new JSONStringer().object()
+						.key("id").value(id)
+						.key("result").object().endObject().endObject();
+				
+				
+				conn.send(res.toString());
+			}
+		});		
 	}
 
 	private void sendDebuggerMsgToWebView(final WebSocketConnection conn,
@@ -249,6 +287,14 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 	private void removeBreakpoint(final WebSocketConnection conn, final JSONObject message) throws JSONException {
 		
 		final JSONObject params = message.getJSONObject("params");
+		Breakpoint breakpoint = Breakpoint.valueOf(params.getString("breakpointId"));
+
+		Log.d(TAG, "removeBreakpoint: " + breakpoint);
+		
+		Set<Breakpoint> breakpoints = scriptBreakpoints.get(breakpoint.file);
+		if (breakpoints != null) {
+			breakpoints.remove(breakpoint);
+		}
 		
 		debugSession.getBrowserInterface().sendMsgToWebView(
 				"breakpoint-remove",
@@ -258,12 +304,6 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			@Override
 			public void onReply(JSONObject data) throws JSONException {
 				
-				String[] breakpointInfo = params.getString("breakpointId").split("[:]");
-				List<Integer> breakpoints = scriptBreakpoints.get(breakpointInfo[0]);
-				if (breakpoints != null) {
-					breakpoints.remove(Integer.valueOf(breakpointInfo[1]));
-				}
-			
 				conn.send(new JSONStringer().object()
 						.key("id").value(message.getInt("id"))
 					.endObject().toString());
@@ -279,26 +319,27 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 	 * @param message the JSON message
 	 * @throws JSONException some JSON exception
 	 */
-	private void setBreakpointByUrl(final WebSocketConnection conn, final int id, final String url, final int lineNumber, final boolean actualLocation) throws JSONException {
+	private void setBreakpointByUrl(final WebSocketConnection conn, final int id, final String url, final int lineNumber, final String condition, final boolean actualLocation) throws JSONException {
 				
+		final Breakpoint breakpoint = new Breakpoint(url, lineNumber, condition);
+		Log.d(TAG, "setBreakpointByUrl: " + breakpoint);
+
 		debugSession.getBrowserInterface().sendMsgToWebView(
 				"breakpoint-set",
 				new JSONObject().put("url", url).put(
-						"lineNumber", lineNumber),
+						"lineNumber", lineNumber).put("condition", condition),
 				new ReplyReceiver() {
 
 			@Override
 			public void onReply(JSONObject data) throws JSONException {
 				
 				// add breakpoint to internal list of breakpoints
-				List<Integer> breakpoints = scriptBreakpoints.get(url);
+				Set<Breakpoint> breakpoints = scriptBreakpoints.get(url);
 				if (breakpoints == null) {
-					breakpoints = new ArrayList<Integer>();
+					breakpoints = new HashSet<Breakpoint>();
 					scriptBreakpoints.put(url, breakpoints);
 				}
-				if (!breakpoints.contains(lineNumber)) {
-					breakpoints.add(lineNumber);
-				}
+				breakpoints.add(breakpoint);
 				
 				JSONStringer res = new JSONStringer().object()
 						.key("id").value(id)
@@ -354,22 +395,24 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 		}
 		
 		
-		List<Integer> breakpoints = scriptBreakpoints.get(url);
+		Set<Breakpoint> breakpoints = scriptBreakpoints.get(url);
 		if (breakpoints != null) {
 			if (conn != null) {
-				for (int breakpoint : breakpoints) {
+				for (Breakpoint breakpoint : breakpoints) {
 					debugSession.getBrowserInterface().sendMsgToWebView(
 							"breakpoint-set",
 							new JSONObject().put("url", url).put("lineNumber",
-									breakpoint), null);
+									breakpoint.line).put("condition", breakpoint.condition), null);
 					
+					Log.d(TAG, "breakpointResolved: " + breakpoint);
+
 					conn.send(new JSONStringer().object()
 						.key("method").value("Debugger.breakpointResolved")
 						.key("params").object()
-								.key("breakpointId").value(url + ":" + breakpoint)
+								.key("breakpointId").value(breakpoint.getBreakpointId())
 								.key("location").object()
 									.key("scriptId").value(url)
-									.key("lineNumber").value(breakpoint)
+									.key("lineNumber").value(breakpoint.line)
 									.key("columnNumber").value(0)
 								.endObject()
 							.endObject()
@@ -378,5 +421,61 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			}
 		}
 	
+	}
+	
+	static class Breakpoint {
+		final String file;
+		final int line;
+		final String condition;
+		
+		public Breakpoint(String file, int line, String condition) {
+			super();
+			this.file = file;
+			this.line = line;
+			this.condition = condition;
+		}
+		
+		public String getBreakpointId() {
+			return file + ":" + line;
+		}
+		
+		public static Breakpoint valueOf(String breakpointId) {
+			int idx = breakpointId.lastIndexOf(":");
+			return new Breakpoint(breakpointId.substring(0, idx), Integer.valueOf(breakpointId.substring(idx+1)), null);
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + ((file == null) ? 0 : file.hashCode());
+			result = prime * result + line;
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Breakpoint other = (Breakpoint) obj;
+			if (file == null) {
+				if (other.file != null)
+					return false;
+			} else if (!file.equals(other.file))
+				return false;
+			if (line != other.line)
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return "Breakpoint [file=" + file + ", line=" + line
+					+ ", condition=" + condition + "]";
+		}
 	}
 }

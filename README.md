@@ -3,7 +3,7 @@ jsHybugger - Javascript Debugger for Android
 
 Maybe you already know how easy it is to debug web pages on your Android device with Google Chrome and the Remote Debugging feature. Unfortunately you can't use this feature (maybe in future?) to debug a web page which runs inside a native app (within a webview component) or the default android browser! And now, what can you do, to track down your javascript errors? The normal approach is to insert a bunch of console.log() calls to your code and use logcat or a remote console tool to watch your debug statements and take some action. If you know this kind of developing, maybe jsHybugger would be an interessting tool for you!
 
-jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.google.com/chrome-developer-tools/docs/debugger-protocol) as an android service. You can easily integrate the service component into your existing Android App to enable javascript debugging for webview components (you can also debug PhoneGap apps) or you can use the [jsHybugger Debugging App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) (available over google play store or as [APK](http://jshybugger.org/download/jshybugger-proxy.apk)) to debug web pages which runs in the default android browser.
+jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.google.com/chrome-developer-tools/docs/debugger-protocol) as an android service. You can easily integrate the service component into your existing Android App to enable javascript debugging for webview components (you can also debug PhoneGap apps) or you can use the [jsHybugger Debugging App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) (available over google play store or as [APK](http://jshybugger.org/download/jshybugger-proxy-1.1.1.apk)) to debug web pages which runs in the default android browser.
 
 # New JsHybugger 1.1 Features 
 
@@ -14,7 +14,7 @@ jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.
 * Object inspection enhanced
 * Frontend upgrade to Chrome Dev Tools 27.0.1453.90
  
-[Download preview version 1.1](http://jshybugger.org/download/jshybugger-bundle-1.1.0-SNAPSHOT.jar)
+[Download version 1.1.1](http://jshybugger.org/download/jshybugger-bundle-1.1.1.jar)
 
 
 # [jsHybugger Debugger App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) 
