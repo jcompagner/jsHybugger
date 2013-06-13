@@ -5,14 +5,21 @@ Maybe you already know how easy it is to debug web pages on your Android device 
 
 jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.google.com/chrome-developer-tools/docs/debugger-protocol) as an android service. You can easily integrate the service component into your existing Android App to enable javascript debugging for webview components (you can also debug PhoneGap apps) or you can use the [jsHybugger Debugging App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) (available over google play store or as [APK](http://jshybugger.org/download/jshybugger-proxy-1.1.1.apk)) to debug web pages which runs in the default android browser.
 
-# New JsHybugger 1.1 Features 
+# JsHybugger 1.1 Features 
 
 * View/Edit/Delete Local Storage 
 * View/Edit/Delete Session Storage
 * View/Edit/Delete WebSQL Database
 * View page resources (images, scripts, html)
-* Object inspection enhanced
-* Frontend upgrade to Chrome Dev Tools 27.0.1453.90
+* line / conditional breakpoints
+* watch expressions
+* step into/over/out
+* continue to here
+* break on exception
+* call stack navigation
+* local variable inspection
+* remote console logging
+* javascript syntax and runtime error reporting 
  
 [Download version 1.1.1](http://jshybugger.org/download/jshybugger-bundle-1.1.1.jar)
 
@@ -26,17 +33,6 @@ How does it work?
 
 jsHybugger will intercept all resource requests for your web page, and will do an on-the-fly instrumentation of your 
 javascript and html files. Javascript files, with the extension ".min.js" will not be instrumented and therefor not debug-able. If you use the non minified version of large libraries i.e. jquery, it's important to start the app on the FIRST run (with jsHybugger) NOT in debug mode. The instrumentation will take some time (jquery about 10sec.), the instrumented files are stored in a cache and are used at next startup. File changes are detected automatically and will trigger an re-instrumentation of the file. jsHybugger will automatically starts a WebSocket-Server on port 8888 on your device. You can use Eclipse together with the [Chrome-DevTools for Java](http://code.google.com/p/chromedevtools/) or you can use the "Chrome Browser" on your notebook/desktop to access the debugging service on your smartphone.
-
-# jsHybugger features
-
-* breakpoints
-* watch expressions
-* step into/over/out
-* break on exception
-* call stack navigation
-* local variable inspection
-* remote console
-* javascript syntax and runtime error reporting 
 
 # jsHybugger pictures and videos 
 
