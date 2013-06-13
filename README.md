@@ -34,7 +34,7 @@ How does it work?
 jsHybugger will intercept all resource requests for your web page, and will do an on-the-fly instrumentation of your 
 javascript and html files. Javascript files, with the extension ".min.js" will not be instrumented and therefor not debug-able. If you use the non minified version of large libraries i.e. jquery, it's important to start the app on the FIRST run (with jsHybugger) NOT in debug mode. The instrumentation will take some time (jquery about 10sec.), the instrumented files are stored in a cache and are used at next startup. File changes are detected automatically and will trigger an re-instrumentation of the file. jsHybugger will automatically starts a WebSocket-Server on port 8888 on your device. You can use Eclipse together with the [Chrome-DevTools for Java](http://code.google.com/p/chromedevtools/) or you can use the "Chrome Browser" on your notebook/desktop to access the debugging service on your smartphone.
 
-[Install Debugger App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) 
+[Install Debugger App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) or 
 [Download Debugger App](http://jshybugger.org/download/jshybugger-proxy-1.1.1.apk) 
 
 # jsHybugger pictures and videos 
