@@ -253,10 +253,16 @@ window.JsHybugger = (function() {
 	        	case 'callFunctionOn':
 	        		return runSafe('callFunctionOn', function() {
 	        			var objectParams = cmd.data.params.objectId.split(":");
-	        			stack = callStack[objectParams[1]];
-
+	        			var obj = getObject(cmd.data.params.objectId);
+	        			var fctn = new Function('return (' + cmd.data.params.functionDeclaration + ').apply(this,arguments)');
+	        			var val = obj && fctn ? fctn.apply(obj, cmd.data.params.arguments) : {};
 	        			var response = {
-	        					result : stack ? stack.evalScope(cmd.data.expression) : eval(cmd.data.expression)
+        					result : {
+        						result : { 
+        							type : typeof(val),
+        							value : val
+        						}
+        					}
 	        			};
 	        			
 	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(response));
@@ -670,6 +676,34 @@ window.JsHybugger = (function() {
 		}		
         
         JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ result : results }));
+    }
+    
+    
+    function getObject(objectId) {
+    	
+		var objectParams = objectId.split(":");
+		
+		var stack = objectParams[0] === 'stack' ? callStack[objectParams[1]] : undefined;
+		var objName = objectParams[2];
+		var obj = null;
+		var props = objName ? objName.split('.') : [];
+
+		if (!stack) {
+			props = objectParams[1].split('.');
+			obj = globalWatches[props[0]];
+		} else if (objName.indexOf('this') == 0) {
+			obj = stack.that;
+		} else if (objName.indexOf('expr') == 0) {
+			obj = stack.expr;
+		} else {
+			obj = stack.evalScope(props[0]);
+		}
+
+		for (var i=1; obj && i < props.length; i++) {
+			obj = obj[props[i]];
+		}
+		
+		return obj;
     }
     
     /**
