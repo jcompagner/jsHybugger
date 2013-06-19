@@ -30,6 +30,8 @@ window.JsHybugger = (function() {
 	var databases = [];
 	var globalWatches = {};
 	var continueToLocation;
+	var breakpointsActive = true;
+	var pauseOnExceptionsState = 'none';
 	
 	if (window['JsHybuggerNI'] === undefined) {
 		console.info("JsHybugger loaded outside a native app.")
@@ -147,7 +149,7 @@ window.JsHybugger = (function() {
             	trace : 'log',
             	group : 'log',
             	groupEnd : 'log',
-            	assert : 'error'	
+            	assert : 'error'
             };
             var types = {
             	info : 'log',	
@@ -250,9 +252,21 @@ window.JsHybugger = (function() {
 
 		if (cmd) {
 	        switch (cmd.command) {
+	        	case 'setPauseOnExceptions':
+	        		return runSafe('setPauseOnExceptions', function() {
+	        			pauseOnExceptionsState = cmd.data.params.state;
+	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({}));
+	        		}, true);
+
+	        	case 'setBreakpointsActive':
+	        		
+	        		return runSafe('setBreakpointsActive', function() {
+	        			breakpointsActive = cmd.data.params.active;
+	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({}));
+	        		}, true);
+	        		
 	        	case 'callFunctionOn':
 	        		return runSafe('callFunctionOn', function() {
-	        			var objectParams = cmd.data.params.objectId.split(":");
 	        			var obj = getObject(cmd.data.params.objectId);
 	        			var fctn = new Function('return (' + cmd.data.params.functionDeclaration + ').apply(this,arguments)');
 	        			var val = obj && fctn ? fctn.apply(obj, cmd.data.params.arguments) : {};
@@ -629,24 +643,7 @@ window.JsHybugger = (function() {
 				}
 			}
 		} else {
-			var objName = objectParams[2];
-			var obj = null;
-			var props = objName ? objName.split('.') : [];
-
-			if (!stack) {
-				props = objectParams[1].split('.');
-				obj = globalWatches[props[0]];
-			} else if (objName.indexOf('this') == 0) {
-				obj = stack.that;
-			} else if (objName.indexOf('expr') == 0) {
-				obj = stack.expr;
-			} else {
-				obj = stack.evalScope(props[0]);
-			}
-
-			for (var i=1; obj && i < props.length; i++) {
-				obj = obj[props[i]];
-			}
+			var obj = getObject(cmd.data.objectId);
 			
 			for (expr in obj) {
 				var oVal = obj[expr];
@@ -678,7 +675,10 @@ window.JsHybugger = (function() {
         JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe({ result : results }));
     }
     
-    
+    /**
+     * Returns the js object for a given object path.
+     * @param {string} objectId object identifier i.e. global:id
+     */
     function getObject(objectId) {
     	
 		var objectParams = objectId.split(":");
@@ -995,7 +995,7 @@ window.JsHybugger = (function() {
                            shouldBreak(callStackDepth) ||                      /* break on next (in|over|out) */
                            (continueToLocation && continueToLocation.file == file && continueToLocation.line == line);
 
-        if (!isBreakpoint) {
+        if (!isBreakpoint || !breakpointsActive) {
             return;
         }
 
@@ -1020,7 +1020,10 @@ window.JsHybugger = (function() {
      */
     function reportException(e) {
     	console.error('Exception at line: ' + lastLine + ", file: " + lastFile + ", reason: " + e.toString());
-    	sendDebuggerPaused('exception', { description : e.toString() });
+    	if (pauseOnExceptionsState != 'none') {
+    		// none, all, uncaught - at the moment uncaught and all is the same
+    		sendDebuggerPaused('exception', { description : e.toString() });
+    	}
     }
     
     
