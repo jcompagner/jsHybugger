@@ -119,12 +119,9 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			
 			removeBreakpoint(conn, message);
 			
-		} else if (method.equals("setPauseOnExceptions") ||
-				method.equals("setBreakpointsActive")) {
+		} else if (method.equals("setPauseOnExceptions")) {
 			
-			conn.send(new JSONStringer().object()
-					.key("id").value(message.getInt("id"))
-					.key("result").object().endObject().endObject().toString());
+			setPauseOnExceptions(conn, message);
 			
 		} else if (method.equals("evaluateOnCallFrame")) {
 			
@@ -142,9 +139,61 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 		} else if (method.equals("stepInto")) {
 			sendDebuggerMsgToWebView(conn, "breakpoint-step-into", message);
 			
+		} else if (method.equals("setBreakpointsActive")) {
+			
+			setBreakpointsActive(conn, message);
+			
 		} else {
 			super.onReceiveMessage(conn, method, message);
 		}
+	}
+
+	/**
+	 * Process "Debugger.setPauseOnExceptions" protocol messages.
+	 * Forwards the message to the WebView and returns the result to the debugger frontend. 
+	 *
+	 * @param conn the websocket connection
+	 * @param message the JSON message
+	 * @throws JSONException some JSON exception
+	 */
+	private void setPauseOnExceptions(final WebSocketConnection conn,
+			final JSONObject message)  throws JSONException {
+		
+		debugSession.getBrowserInterface().sendMsgToWebView(
+				"setPauseOnExceptions",
+				new JSONObject().put("params", message.getJSONObject("params")),
+				new ReplyReceiver() {
+
+			@Override
+			public void onReply(JSONObject data) throws JSONException {
+				
+				DebuggerMsgHandler.this.sendAckMessage(conn, message);
+			}
+		});				
+	}
+
+	/**
+	 * Process "Debugger.setBreakpointsActive" protocol messages.
+	 * Forwards the message to the WebView and returns the result to the debugger frontend. 
+	 *
+	 * @param conn the websocket connection
+	 * @param message the JSON message
+	 * @throws JSONException some JSON exception
+	 */
+	private void setBreakpointsActive(final WebSocketConnection conn,
+			final JSONObject message) throws JSONException {
+		
+		debugSession.getBrowserInterface().sendMsgToWebView(
+				"setBreakpointsActive",
+				new JSONObject().put("params", message.getJSONObject("params")),
+				new ReplyReceiver() {
+
+			@Override
+			public void onReply(JSONObject data) throws JSONException {
+				
+				DebuggerMsgHandler.this.sendAckMessage(conn, message);
+			}
+		});				
 	}
 
 	/**
