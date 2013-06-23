@@ -22,11 +22,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.jshybugger.DebugContentProvider;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.webbitserver.WebSocketConnection;
 
+import android.content.ContentValues;
+import android.net.Uri;
 import android.util.Log;
 
 
@@ -48,7 +51,7 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 	
 	/** The script breakpoints. */
 	private Map<String,Set<Breakpoint>> scriptBreakpoints =  new HashMap<String,Set<Breakpoint>>();
-	
+
 	public final static String HANDLER_NAME = "Debugger";
 	
 	/**
@@ -99,6 +102,10 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			}
 			
 			conn.send(reply.toString());
+
+		} else if ("setScriptSource".equals(method)) {
+
+			setScriptSource(conn, message);
 			
 		} else if ("continueToLocation".equals(method)) {
 			
@@ -147,6 +154,49 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			super.onReceiveMessage(conn, method, message);
 		}
 	}
+	
+	/**
+	 * Process "Debugger.setScriptSource" protocol messages.
+	 * Forwards the message to the WebView and returns the result to the debugger frontend. 
+	 *
+	 * @param conn the websocket connection
+	 * @param message the JSON message
+	 * @throws JSONException some JSON exception
+	 */
+	private void setScriptSource(final WebSocketConnection conn,
+			final JSONObject message)  throws JSONException {
+		
+		ContentValues values = new ContentValues();
+		values.put("scriptSource", message.getJSONObject("params").getString("scriptSource"));
+		
+		Uri uri = Uri.parse(DebugContentProvider.PROVIDER_PROTOCOL + message.getJSONObject("params").getString("scriptId"));
+		
+		try {
+			debugSession.application.getContentResolver().insert(uri, values);
+			DebuggerMsgHandler.this.sendAckMessage(conn, message);
+		} catch (RuntimeException rex) {
+			
+			conn.send(new JSONStringer().object()
+					.key("id").value(message.getInt("id"))
+					.key("error").object()
+						.key("code").value(-32000)
+						.key("message").value(rex.getMessage())
+						.endObject()
+					.endObject().toString());
+		}
+		/*
+		debugSession.getBrowserInterface().sendMsgToWebView(
+				"setPauseOnExceptions",
+				new JSONObject().put("params", message.getJSONObject("params")),
+				new ReplyReceiver() {
+
+			@Override
+			public void onReply(JSONObject data) throws JSONException {
+				
+				DebuggerMsgHandler.this.sendAckMessage(conn, message);
+			}
+		});*/				
+	}	
 
 	/**
 	 * Process "Debugger.setPauseOnExceptions" protocol messages.

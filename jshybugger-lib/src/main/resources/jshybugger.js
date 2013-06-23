@@ -514,13 +514,15 @@ window.JsHybugger = (function() {
      */
     function getResourceTree(cmd) {
     
+    	var id = new Date().getTime() % 3600;
+    	
     	var prot = 'content://jsHybugger.org/';
     	var result = {
     		frameTree : {
     			frame : {
-    				id : '3130.1',
+    				id : id + '.1',
     				url : document.location.href.indexOf(prot) == 0 ? document.location.href.substr(prot.length) : document.location.href,
-    				loaderId: '3130.2',
+    				loaderId: id + '.2',
     				securityOrigin : document.location.origin,
     				mimeType : 'text/html'
     			},
@@ -1019,7 +1021,7 @@ window.JsHybugger = (function() {
      * Used by the instrumented code to report thrown exceptions in the code.
      */
     function reportException(e) {
-    	console.error('Exception at line: ' + lastLine + ", file: " + lastFile + ", reason: " + e.toString());
+    	console.error(e.toString());
     	if (pauseOnExceptionsState != 'none') {
     		// none, all, uncaught - at the moment uncaught and all is the same
     		sendDebuggerPaused('exception', { description : e.toString() });

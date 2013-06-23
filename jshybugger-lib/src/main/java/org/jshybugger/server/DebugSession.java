@@ -15,16 +15,13 @@
  */
 package org.jshybugger.server;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.jshybugger.DebugContentProvider;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
@@ -32,9 +29,8 @@ import org.webbitserver.BaseWebSocketHandler;
 import org.webbitserver.WebSocketConnection;
 
 import android.content.Context;
-import android.content.res.AssetManager;
-import android.util.Base64;
-import android.util.Base64OutputStream;
+import android.database.Cursor;
+import android.net.Uri;
 import android.util.Log;
 
 
@@ -46,9 +42,6 @@ public class DebugSession extends BaseWebSocketHandler {
 
 	/** The Constant TAG. */
 	private static final String TAG = "DebugServer";
-	
-	/** The Constant ANDROID_ASSET_URL. */
-	private static final String ANDROID_ASSET_URL = "file:///android_asset/";
 	
 	/** The message handler list. */
 	private final HashMap<String,MessageHandler> HANDLERS = new HashMap<String,MessageHandler>(); 
@@ -213,67 +206,28 @@ public class DebugSession extends BaseWebSocketHandler {
 	 * Load script resource by URI.
 	 *
 	 * @param scriptUri the script URI to load
-	 * @param encode TODO
-	 * @return the javascript content 
+	 * @param encode true to use base64 encoding
+	 * @return the file resource content 
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	public String loadScriptResourceById(String scriptUri, boolean encode) throws IOException {
 		
 		Log.d(TAG, "loadScriptResourceById: " + scriptUri);
 		
-		BufferedInputStream inputStream = new BufferedInputStream(openInputFile(scriptUri));
-		ByteArrayOutputStream byteOut = new ByteArrayOutputStream(inputStream.available());
-		OutputStream outStream = null;
-		
-		if (encode) {
-			outStream = new Base64OutputStream(byteOut, Base64.DEFAULT);
-		} else {
-			outStream = byteOut;
-		}
+		Cursor cursor = application.getContentResolver().query(Uri.parse(DebugContentProvider.PROVIDER_PROTOCOL + scriptUri), 
+				new String[] { encode ? "scriptSourceEncoded" : "scriptSource" }, 
+				null, 
+				null, 
+				null);
 		
 		String resourceContent=null;
-		try {
-			byte bytesRead[] = new byte[4096];
-			int numBytes=0;
-			
-			//Read File Line By Line
-			while ((numBytes = inputStream.read(bytesRead)) > 0)   {
-				outStream.write(bytesRead,0,numBytes);
-			}
-		} finally {
-			resourceContent = byteOut.toString();
-			
-			inputStream.close();
-			outStream.close();
+		if (cursor.moveToFirst()) {
+			resourceContent = cursor.getString(0);
 		}
 		
+		cursor.close();
 		Log.d(TAG, "loadScriptResourceById - length: " + resourceContent.length());
 		
 		return resourceContent;
 	}
-	
-	/**
-	 * Open file resource as stream.
-	 *
-	 * @param url the file url
-	 * @return the buffered input stream
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 */
-	protected BufferedInputStream openInputFile(String url) throws IOException {
-
-		BufferedInputStream resource = null;
-        if (url.startsWith(ANDROID_ASSET_URL)) {
-        	url = url.substring(ANDROID_ASSET_URL.length());
-    		resource = new BufferedInputStream(application.getAssets().open(url,AssetManager.ACCESS_STREAMING));
-
-        } else if (url.indexOf(":") < 0) {
-    		resource = new BufferedInputStream(application.getAssets().open(url,AssetManager.ACCESS_STREAMING));
-
-        } else {
-    		resource = new BufferedInputStream(new URL(url).openStream());
-        }
-		return resource;
-	}
-
-
 }

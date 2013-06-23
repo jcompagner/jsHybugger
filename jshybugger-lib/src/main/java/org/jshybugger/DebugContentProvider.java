@@ -17,9 +17,11 @@ package org.jshybugger;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,16 +35,18 @@ import org.mozilla.javascript.EvaluatorException;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.database.Cursor;
+import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.ParcelFileDescriptor;
 import android.os.ParcelFileDescriptor.AutoCloseOutputStream;
+import android.util.Base64;
+import android.util.Base64OutputStream;
 import android.util.Log;
 
 /**
@@ -50,6 +54,10 @@ import android.util.Log;
  * Sp  
  */
 public class DebugContentProvider extends ContentProvider {
+
+	public static final String PROVIDER_PROTOCOL = "content://jsHybugger.org/";
+
+	private static final String INSTRUMENTED_FILE_APPENDIX = ".instr";
 
 	/** The Constant TAG. */
 	private static final String TAG = "DebugContentProvider";
@@ -61,10 +69,13 @@ public class DebugContentProvider extends ContentProvider {
 	private static final String ANDROID_PRIVATE_URL = "file:///data/data/";
 
 	/** The debug service started. */
-	private CountDownLatch debugServiceStarted = new CountDownLatch(1);
+	private CountDownLatch debugServiceStarted = new CountDownLatch(2);
 	
 	/** The debug service msg handler. */
 	private DebugServiceMsgHandler debugServiceMsgHandler = new DebugServiceMsgHandler(debugServiceStarted);
+	
+	private static File CACHE_DIR = null;
+	private static File CHANGED_CACHE_DIR=null;
 	
 	/* (non-Javadoc)
 	 * @see android.content.ContentProvider#openFile(android.net.Uri, java.lang.String)
@@ -72,13 +83,8 @@ public class DebugContentProvider extends ContentProvider {
 	@Override
 	public ParcelFileDescriptor openFile(Uri uri, String mode) {
 
-		// wait here till sync debug service is started 
-		try {
-			debugServiceStarted.await();
-		} catch (InterruptedException e1) {
-			Log.e(TAG, "Waiting for debug service interrupted");
-			return null;
-		}
+		// wait here till sync debug service is started
+		prepareStartupAndWait();
 		
         String url = uri.getPath().substring(1);
 		String loadUrl = null;
@@ -89,9 +95,17 @@ public class DebugContentProvider extends ContentProvider {
 
 			if (resource.isJs()) {
 				// check if the js file is already instrumented and can be immediately returned
-				loadUrl = getInstrumentedFileName(url, resource);
+				loadUrl = getCacheFileName(url, resource);
 				if (loadUrl != null) {
-					File loadUrlFd = new File(getContext().getFilesDir(), loadUrl);
+					// first look in the changed cache
+					File loadUrlFd = new File(CHANGED_CACHE_DIR, loadUrl+ INSTRUMENTED_FILE_APPENDIX);
+					if (loadUrlFd.exists()) {
+						resource.getInputSream().close();
+						return ParcelFileDescriptor.open(loadUrlFd, ParcelFileDescriptor.MODE_READ_ONLY);
+					}
+
+					// then look in the normal cache
+					loadUrlFd = new File(CACHE_DIR, loadUrl+ INSTRUMENTED_FILE_APPENDIX);
 					if (loadUrlFd.exists()) {
 						resource.getInputSream().close();
 						return ParcelFileDescriptor.open(loadUrlFd, ParcelFileDescriptor.MODE_READ_ONLY);
@@ -117,24 +131,24 @@ public class DebugContentProvider extends ContentProvider {
 				
 			} else if (resource.isJs() && !url.endsWith(".min.js")) {
 				// instrument js code
-				FileOutputStream outputStream = getContext().openFileOutput(loadUrl, Context.MODE_PRIVATE);
+				File outFile = new File(CACHE_DIR, loadUrl + INSTRUMENTED_FILE_APPENDIX);
 				try {
-					JsCodeLoader.instrumentFile(resource.getInputSream(), url, outputStream);
-
+					JsCodeLoader.instrumentFile(resource.getInputSream(), url, new FileOutputStream(outFile));
+				
 				} catch (EvaluatorException e) {
 			        Log.d(TAG, "parsing failure while instrumenting file: " + e.getMessage());
 
 			        // delete file - maybe partially instrumented file.
-					getContext().deleteFile(loadUrl);
+					outFile.delete();
 					
-					String writeConsole = "console.error('Javascript syntax error: " + e.getMessage().replace("'", "\"") + "')";
+					String writeConsole = "console.error('" + e.getMessage().replace("'", "\"") + "')";
 					return createParcel(new InputResource(false, false, new BufferedInputStream( new ByteArrayInputStream(writeConsole.getBytes()))));
 					
 				} catch (Exception e) {
 			        Log.d(TAG, "instrumentation failed, delivering original file: " + uri, e);
 
 			        // delete file - maybe partially instrumented file.
-					getContext().deleteFile(loadUrl);
+					outFile.delete();
 
 					return createParcel(openInputFile(url));
 					
@@ -143,7 +157,7 @@ public class DebugContentProvider extends ContentProvider {
 				}
 				
 				// return instrumented js code
-				File loadUrlFd = new File(getContext().getFilesDir(), loadUrl);
+				File loadUrlFd = new File(CACHE_DIR, loadUrl+ INSTRUMENTED_FILE_APPENDIX);
 				return ParcelFileDescriptor.open(loadUrlFd, ParcelFileDescriptor.MODE_READ_ONLY);
 			} else {
 		        Log.d(TAG, "loading file: " + uri);
@@ -156,6 +170,35 @@ public class DebugContentProvider extends ContentProvider {
 
 		return null;
     }
+
+	private void prepareStartupAndWait() {
+		try {
+			synchronized (debugServiceStarted) {
+				 
+				if (debugServiceStarted.getCount() > 1) {
+					CACHE_DIR = new File(getContext().getFilesDir(), ".jsHybugger");
+					if (!CACHE_DIR.mkdir()) {
+						Log.e(TAG, "Creating jsHybugger cache failed. "  + CACHE_DIR.getAbsolutePath());
+					}
+					CHANGED_CACHE_DIR = new File(CACHE_DIR, ".changed");
+					if (!CHANGED_CACHE_DIR.mkdir()) {
+						Log.e(TAG, "Creating jsHybugger changed cache failed. "  + CHANGED_CACHE_DIR.getAbsolutePath());
+					}
+					
+					// clear all files in changed cache
+	        		for (File file : CHANGED_CACHE_DIR.listFiles()) {
+	        			file.delete();
+	        		}
+	        		
+					debugServiceStarted.countDown();
+				}
+			}
+
+			debugServiceStarted.await();
+		} catch (InterruptedException e1) {
+			Log.e(TAG, "Waiting for debug service interrupted");
+		}
+	}
 
 	private ParcelFileDescriptor createParcel(InputResource resource)
 			throws IOException {
@@ -227,24 +270,25 @@ public class DebugContentProvider extends ContentProvider {
 	}
 	
 	/**
-	 * Gets the instrumented file name.
+	 * Gets the cache file name.
 	 *
 	 * @param url the url to instrument
 	 * @param resource resource input stream
 	 * @return the instrument file name
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	private String getInstrumentedFileName(String url, InputResource resource) throws IOException {
+	private String getCacheFileName(String url, InputResource resource) throws IOException {
 		String loadUrl = null;
-		if (resource.isJs()) {
-			try {
+		try {
+			loadUrl = url.replaceAll("[/:?=]", "_");
+			if (resource != null) {
 				resource.getInputSream().mark(1000000);
-				loadUrl = url.replaceAll("[/:?=]", "_") + Md5Checksum.getMD5Checksum(resource.getInputSream());
-				
-			} catch (Exception e) {
-				Log.e(TAG, "getInstrumentedFileName failed:" + url, e);
-			} 
-		}
+				loadUrl += Md5Checksum.getMD5Checksum(resource.getInputSream());
+			}
+			
+		} catch (Exception e) {
+			Log.e(TAG, "getCacheFileName failed:" + url, e);
+		} 
 		return loadUrl;
 	}	
 	
@@ -282,17 +326,136 @@ public class DebugContentProvider extends ContentProvider {
 	 * @see android.content.ContentProvider#insert(android.net.Uri, android.content.ContentValues)
 	 */
 	@Override
-	public Uri insert(Uri arg0, ContentValues arg1) {
-		throw new UnsupportedOperationException("Not supported by this provider");
+	public Uri insert(Uri uri, ContentValues content) {
+		
+		// wait here till sync debug service is started 
+		prepareStartupAndWait();
+		
+        String url = uri.getPath().substring(1);
+		String loadUrl = null;
+        
+		try {
+			// get original source
+			InputResource resource = openInputFile(url);
+
+			if (resource.isJs()) {
+				// check if the js file is already instrumented and can be immediately returned
+				loadUrl = getCacheFileName(url, resource);
+				
+				if (loadUrl != null) {
+					File loadUrlFd = new File(CHANGED_CACHE_DIR, getCacheFileName(url, null));
+					FileWriter fw = new FileWriter(loadUrlFd);
+					fw.write(content.getAsString("scriptSource"));
+					fw.close();
+					
+					resource = new InputResource(true, false, 
+		        			new BufferedInputStream(new FileInputStream(loadUrlFd)));					
+				}
+			
+				// instrument js code
+				File outFile = new File(CHANGED_CACHE_DIR, loadUrl + INSTRUMENTED_FILE_APPENDIX);
+				try {
+					JsCodeLoader.instrumentFile(resource.getInputSream(), url, new FileOutputStream(outFile));
+
+				} catch (EvaluatorException e) {
+			        Log.d(TAG, "parsing failure while instrumenting file: " + e.getMessage());
+
+			        // delete file - maybe partially instrumented file.
+			        outFile.delete();
+			        
+					String writeConsole = e.getMessage();
+					throw new RuntimeException(writeConsole);
+				} catch (Exception e) {
+			        Log.d(TAG, "instrumentation failed: " + uri, e);
+
+			        // delete file - maybe partially instrumented file.
+			        outFile.delete();
+			        
+					throw new RuntimeException("instrumentation failed: " + uri, e);
+					
+				} finally {
+					resource.getInputSream().close();
+				}
+				
+				return uri;
+
+			}			
+		} catch (IOException e) {
+	        Log.e(TAG, "file insert failed: " + e);
+		}
+
+		return null;
 	}
 
 	/* (non-Javadoc)
 	 * @see android.content.ContentProvider#query(android.net.Uri, java.lang.String[], java.lang.String, java.lang.String[], java.lang.String)
 	 */
 	@Override
-	public Cursor query(Uri arg0, String[] arg1, String arg2, String[] arg3,
-			String arg4) {
-		throw new UnsupportedOperationException("Not supported by this provider");
+	public Cursor query(Uri uri, String[] columns, String selection, String[] selectionArgs,
+			String sortOrder) {
+		
+		MatrixCursor cursor = new MatrixCursor(columns,  1); 
+		
+		// get original source
+        String url = uri.getPath().substring(1);
+
+		try {
+	        BufferedInputStream inputStream = null;
+	        
+			// check if the js file is already instrumented and can be immediately returned
+			String localCacheResource;
+				localCacheResource = getCacheFileName(url, null);
+	
+				if (localCacheResource != null) {
+				// first look in the changed cache
+				File loadUrlFd = new File(CHANGED_CACHE_DIR, localCacheResource);
+				if (loadUrlFd.exists()) {
+					inputStream = new BufferedInputStream(new FileInputStream(loadUrlFd));
+				} else {
+	
+					// then look in the normal cache
+					loadUrlFd = new File(CACHE_DIR, localCacheResource);
+					if (loadUrlFd.exists()) {
+						inputStream = new BufferedInputStream(new FileInputStream(loadUrlFd));
+					} else {
+						inputStream = new BufferedInputStream(openInputFile(url).inputSream);
+					}
+				}
+			}
+			
+			ByteArrayOutputStream byteOut = new ByteArrayOutputStream(inputStream.available());
+			OutputStream outStream = null;
+			
+			if ("scriptSourceEncoded".equals(columns[0])) {
+				outStream = new Base64OutputStream(byteOut, Base64.DEFAULT);
+			} else {
+				outStream = byteOut;
+			}
+			
+			//String resourceContent=null;
+			try {
+				byte bytesRead[] = new byte[4096];
+				int numBytes=0;
+				
+				//Read File Line By Line
+				while ((numBytes = inputStream.read(bytesRead)) > 0)   {
+					outStream.write(bytesRead,0,numBytes);
+				}
+				
+				cursor.addRow(new Object[] { byteOut.toString() });
+			} finally {
+				//resourceContent = byteOut.toString();
+				
+				inputStream.close();
+				outStream.close();
+			}
+		
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return cursor;
 	}
 
 	/* (non-Javadoc)
