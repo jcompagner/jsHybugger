@@ -178,7 +178,7 @@ public class DebugInstrumentator implements NodeVisitor {
 	 */
 	private void instrumentStatement(AstNode node, boolean debugger) {
 
-		if (processedLines.contains(node.getLineno()) || (node.getParent() instanceof ForInLoop)) {
+		if ((node.getPosition() == 0) || processedLines.contains(node.getLineno()) || (node.getParent() instanceof ForInLoop)) {
 			return;
 		}
 		
