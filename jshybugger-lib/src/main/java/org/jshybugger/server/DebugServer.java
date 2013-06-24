@@ -34,8 +34,10 @@ import org.webbitserver.WebServers;
  */
 public class DebugServer {
 
-	private static final String CHROME_DEVTOOLS_FRONTEND = "https://chrome-devtools-frontend.appspot.com/static/27.0.1453.90/devtools.html?ws=%s/devtools/page/%s";
+	private static final String CHROME_DEVTOOLS_FRONTEND = "https://chrome-devtools-frontend.appspot.com/static/29.0.1546.0/devtools.html?ws=%s/devtools/page/%s";
 	private WebServer webServer;
+	private DomainSocketServer domainSocketServer;
+	
 	private CountDownLatch debugServerStarted = new CountDownLatch(1);
 	
 	/**
@@ -61,18 +63,37 @@ public class DebugServer {
 	                        	.header("Location", String.format(CHROME_DEVTOOLS_FRONTEND, request.header("Host"), "1")).end();
 	                    }
 	                })
+	                .add("/json/version", new HttpHandler() {
+	                    @Override
+	                    public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) {
+	                    	try {
+								String res = new JSONStringer().object()
+										.key("Browser").value("jsHybugger")
+										.key("Protocol-Version").value("1.0")
+									 .endObject().toString();
+								
+								response.header("Content-type", "application/json")
+									.content(res)
+									.end();
+								
+							} catch (JSONException e) {
+								e.printStackTrace();
+							}
+	                    }
+	                })
 	                .add("/json", new HttpHandler() {
 	                    @Override
 	                    public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) {
 	                    	try {
+	                    		String host = request.header("Host");
 								String res = new JSONStringer().array().object()
 								
-										.key("devtoolsFrontendUrl").value(String.format(CHROME_DEVTOOLS_FRONTEND, request.header("Host"), "1"))
-										.key("faviconUrl").value("http://www.google.de/favicon.ico")
+										.key("devtoolsFrontendUrl").value(String.format(CHROME_DEVTOOLS_FRONTEND, host != null ? host : "//" , "1"))
+										.key("faviconUrl").value("http://www.jshybugger.org/favicon.ico")
 									    .key("thumbnailUrl").value("/thumb/")
 									    .key("title").value("jsHybugger powered debugging")
-									    .key("url").value("http://localhost/")
-									    .key("webSocketDebuggerUrl").value("ws://" + request.header("Host") + "/devtools/page/1")
+									    .key("url").value("content://jsHybugger.org/")
+									    .key("webSocketDebuggerUrl").value("ws://" + (host != null ? host : "") + "/devtools/page/1")
 									    
 									 .endObject().endArray().toString();
 								
@@ -82,7 +103,6 @@ public class DebugServer {
 									.end();
 								
 							} catch (JSONException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 	                    }
@@ -93,6 +113,9 @@ public class DebugServer {
 			}
 		});
 		webServerThread.start();
+		
+		domainSocketServer = new DomainSocketServer();
+		domainSocketServer.start();
 	}
 
 	public void exportSession(DebugSession debugSession) throws InterruptedException {
@@ -107,5 +130,6 @@ public class DebugServer {
 
 	public void stop() {
 		webServer.stop();
+		domainSocketServer.interrupt();
 	}
 }
