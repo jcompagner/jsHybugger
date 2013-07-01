@@ -15,8 +15,10 @@
  */
 package org.jshybugger.server;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * The helper class Md5Checksum calculates the MD5 checksum for file resources.
@@ -28,12 +30,19 @@ public class Md5Checksum {
 	 *
 	 * @param fis the fis
 	 * @return the md5 byte[] array
+	 * @throws IOException 
 	 * @throws Exception the exception
 	 */
-	private static byte[] createChecksum(InputStream fis) throws Exception {
+	private static byte[] createChecksum(InputStream fis) throws IOException  {
 
 		byte[] buffer = new byte[1024];
-		MessageDigest complete = MessageDigest.getInstance("MD5");
+		MessageDigest complete;
+		try {
+			complete = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			throw new IOException("MD5 message digest not found", e);
+		}
+		
 		int numRead;
 
 		do {
@@ -53,7 +62,7 @@ public class Md5Checksum {
 	 * @return the md5 checksum
 	 * @throws Exception the exception
 	 */
-	public static String getMD5Checksum(InputStream fis) throws Exception {
+	public static String getMD5Checksum(InputStream fis) throws IOException {
 		byte[] b = createChecksum(fis);
 		String result = "";
 

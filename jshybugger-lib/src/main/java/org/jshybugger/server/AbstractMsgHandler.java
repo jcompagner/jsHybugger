@@ -15,11 +15,15 @@
  */
 package org.jshybugger.server;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.webbitserver.WebSocketConnection;
 
+// TODO: Auto-generated Javadoc
 /**
  * Abstract base class for MessageHandler implementations.
  */
@@ -31,6 +35,13 @@ abstract public class AbstractMsgHandler implements MessageHandler {
 	/** The debug server. */
 	final protected DebugSession debugSession;
 
+	final static Set<String> INTERNAL_MESSAGES = new HashSet<String>();
+	
+	static {
+		INTERNAL_MESSAGES.add("GlobalInitHybugger");
+		INTERNAL_MESSAGES.add("GlobalPageLoaded");
+	}
+	
 	/**
 	 * Instantiates a new abstract msg handler.
 	 *
@@ -40,6 +51,7 @@ abstract public class AbstractMsgHandler implements MessageHandler {
 	public AbstractMsgHandler(DebugSession debugSession, String objectName) {
 		OBJECT_NAME = objectName;
 		this.debugSession = debugSession;
+		
 	}
 
 	/* (non-Javadoc)
@@ -99,6 +111,12 @@ abstract public class AbstractMsgHandler implements MessageHandler {
 	 */
 	@Override
 	public void onSendMessage(WebSocketConnection conn, String method, JSONObject message) throws JSONException {
+		if ((conn != null) && !INTERNAL_MESSAGES.contains(method)) {
+			conn.send(new JSONStringer().object()
+				.key("method").value(String.format("%s.%s", OBJECT_NAME, method))
+				.key("params").value(message)
+				.endObject().toString());
+		}
 	}
 	
 	/**
@@ -114,4 +132,48 @@ abstract public class AbstractMsgHandler implements MessageHandler {
 			.key("id").value(message.getInt("id"))
 			.key("result").object().endObject().endObject().toString());
 	}
+	
+	/**
+	 * Dispatch incoming message to browser for processing and return reply to debug client.
+	 *
+	 * @param conn the conn
+	 * @param method the method to process
+	 * @param message the message to dispatch
+	 * @throws JSONException the jSON exception
+	 */
+	protected void dispatchToBrowserAndReply(final WebSocketConnection conn, final String method, final JSONObject message) throws JSONException {
+		dispatchToBrowserAndReply(conn, method, message, false);
+	}
+	
+	/**
+	 * Dispatch incoming message to browser for processing, return reply to debug client and optional send confirm message.
+	 *
+	 * @param conn the conn
+	 * @param method the method to process
+	 * @param message the message to dispatch
+	 * @param confirm send confirm message after reply message
+	 * @throws JSONException the jSON exception
+	 */
+	protected void dispatchToBrowserAndReply(final WebSocketConnection conn, final String method, final JSONObject message, final boolean confirm) throws JSONException {
+		
+		debugSession.getBrowserInterface().sendMsgToWebView(
+				method,
+				message.has("params") ? new JSONObject().put("params", message.getJSONObject("params")) : new JSONObject(),
+				new ReplyReceiver() {
+
+			@Override
+			public void onReply(JSONObject data) throws JSONException {
+				
+				conn.send(new JSONStringer().object()
+						.key("id").value(message.getInt("id"))
+						.key("result").value(data)
+						.endObject().toString());
+				
+				if (confirm) {
+					sendAckMessage(conn, message);
+				}
+			}
+		});
+	}
+	
 }

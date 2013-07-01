@@ -55,6 +55,9 @@ public class DebugSession extends BaseWebSocketHandler {
 	/** The browser API interface. */
 	private BrowserInterface browserInterface;
 	
+	public final String PROVIDER_PROTOCOL;
+	
+	
 	/**
 	 * Instantiates a new debug server.
 	 *
@@ -63,6 +66,7 @@ public class DebugSession extends BaseWebSocketHandler {
 	 */
 	public DebugSession( Context application ) throws UnknownHostException {
 		this.application = application;
+		PROVIDER_PROTOCOL = DebugContentProvider.getProviderProtocol(application);
 		
 		MessageHandler msgHandler = new DebuggerMsgHandler(this);
 		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
@@ -80,6 +84,12 @@ public class DebugSession extends BaseWebSocketHandler {
 		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
 
 		msgHandler = new DatabaseMsgHandler(this);
+		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
+		
+		msgHandler = new DOMMsgHandler(this);
+		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
+
+		msgHandler = new CssMsgHandler(this);
 		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
 	}
 	
@@ -214,19 +224,19 @@ public class DebugSession extends BaseWebSocketHandler {
 		
 		Log.d(TAG, "loadScriptResourceById: " + scriptUri);
 		
-		Cursor cursor = application.getContentResolver().query(Uri.parse(DebugContentProvider.PROVIDER_PROTOCOL + scriptUri), 
+		Cursor cursor = application.getContentResolver().query(Uri.parse(PROVIDER_PROTOCOL + scriptUri), 
 				new String[] { encode ? "scriptSourceEncoded" : "scriptSource" }, 
-				null, 
+				DebugContentProvider.ORIGNAL_SELECTION, 
 				null, 
 				null);
 		
 		String resourceContent=null;
-		if (cursor.moveToFirst()) {
+		if (cursor != null && cursor.moveToFirst()) {
 			resourceContent = cursor.getString(0);
+			cursor.close();
 		}
 		
-		cursor.close();
-		Log.d(TAG, "loadScriptResourceById - length: " + resourceContent.length());
+		Log.d(TAG, "loadScriptResourceById - length: " + (resourceContent != null ? resourceContent.length() : 0));
 		
 		return resourceContent;
 	}

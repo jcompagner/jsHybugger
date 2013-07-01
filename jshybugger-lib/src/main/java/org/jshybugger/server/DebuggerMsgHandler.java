@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.jshybugger.DebugContentProvider;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
@@ -40,6 +39,8 @@ import android.util.Log;
  */
 public class DebuggerMsgHandler extends AbstractMsgHandler {
 
+	public final static String HANDLER_NAME = "Debugger";
+
 	/** The methods available. */
 	private final HashMap<String,Boolean> METHODS_AVAILABLE = new HashMap<String, Boolean>(); 
 	
@@ -52,7 +53,6 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 	/** The script breakpoints. */
 	private Map<String,Set<Breakpoint>> scriptBreakpoints =  new HashMap<String,Set<Breakpoint>>();
 
-	public final static String HANDLER_NAME = "Debugger";
 	
 	/**
 	 * Instantiates a new debugger msg handler.
@@ -169,10 +169,10 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 		ContentValues values = new ContentValues();
 		values.put("scriptSource", message.getJSONObject("params").getString("scriptSource"));
 		
-		Uri uri = Uri.parse(DebugContentProvider.PROVIDER_PROTOCOL + message.getJSONObject("params").getString("scriptId"));
+		Uri uri = Uri.parse(this.debugSession.PROVIDER_PROTOCOL + message.getJSONObject("params").getString("scriptId"));
 		
 		try {
-			debugSession.application.getContentResolver().insert(uri, values);
+			debugSession.application.getContentResolver().update(uri, values, null, null);
 			DebuggerMsgHandler.this.sendAckMessage(conn, message);
 		} catch (RuntimeException rex) {
 			

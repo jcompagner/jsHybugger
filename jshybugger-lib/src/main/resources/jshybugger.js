@@ -19,6 +19,7 @@
  */
 if (window['JsHybugger'] === undefined) {
 window.JsHybugger = (function() {
+	var THIS = this;
     var breakpoints = {};
     var breakpointsById = {};
     var shouldBreak = function() { return false; };
@@ -32,6 +33,10 @@ window.JsHybugger = (function() {
 	var continueToLocation;
 	var breakpointsActive = true;
 	var pauseOnExceptionsState = 'none';
+	var NOT_WHITESPACE_MATCHER = /[^\s]/;
+	var FRAME_ID = new String(new Date().getTime() % 3600000);
+	var PROTOCOL = 'content://jsHybugger.org/';
+	
 	
 	if (window['JsHybuggerNI'] === undefined) {
 		console.info("JsHybugger loaded outside a native app.")
@@ -252,6 +257,7 @@ window.JsHybugger = (function() {
 
 		if (cmd) {
 	        switch (cmd.command) {
+	        		
 	        	case 'setPauseOnExceptions':
 	        		return runSafe('setPauseOnExceptions', function() {
 	        			pauseOnExceptionsState = cmd.data.params.state;
@@ -319,6 +325,9 @@ window.JsHybugger = (function() {
 	        	case 'getResourceTree':
 	        		return runSafe('getResourceTree', function() {
 	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(getResourceTree(cmd)));
+	        			
+	        			processStylesheets();
+	        			
 	        		}, true);
 	        		
 	        	case 'getDOMStorageItems':
@@ -503,9 +512,372 @@ window.JsHybugger = (function() {
 	            	
 	            	
 	        	default:
-	        		console.warn('JsHybugger unknown command received:' + cmd.command);
+	        		var fctn = eval(cmd.command);
+	        		if (fctn) {
+		        		return runSafe(cmd.command, function() {
+		        			var rVal = fctn(cmd.data.params);
+		        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(rVal));
+		        		}, true);
+	        		} else {	        		
+	        			console.warn('JsHybugger unknown command received:' + cmd.command);
+	        		}
 	        }
 		}
+    }
+
+    /**
+     * Process "getComputedStyleForNode" message from debug client.
+     */
+    function getComputedStyleForNode(params) {
+    	var nodeId = params.nodeId;
+		var node = getNodeById(nodeId);
+		var computedStyle = [];
+		
+		if (node) {
+	    	var styles = window.getComputedStyle(node, '');
+	    	
+	    	for (prop in styles) {
+	    		if (!isNaN(prop)) {
+	    			computedStyle.push({
+		    			name : styles[prop],
+		    			value : styles.getPropertyValue(styles[prop])
+		    		});
+	    		}
+	    	}
+		}
+		
+    	return { "computedStyle":computedStyle };
+    }
+    
+    /**
+     * Process "getMatchedStylesForNode" message from debug client.
+     */
+    function getMatchedStylesForNode(params) {
+    	var nodeId = params.nodeId;
+		var node = getNodeById(nodeId);
+		var matchedCSSRules = [];
+		
+		if (node) {
+			var matchedRules = window.getMatchedCSSRules(node, '');
+			for (ruleIdx=0; matchedRules && ruleIdx < matchedRules.length; ruleIdx++) {
+				var matchedRule = matchedRules[ruleIdx];
+				var styleSheetId = matchedRule.parentStyleSheet.styleSheetId;
+				
+				var sheetRules = matchedRule.parentStyleSheet.rules;
+				for (var ordinal=0; ordinal < sheetRules.length; ordinal++) {
+					if (sheetRules[ordinal] == matchedRule) {
+						break;
+					}
+				}
+				var rule = {
+					selectorList : {
+						selectors : [ matchedRule.selectorText ],
+						text : matchedRule.selectorText
+					},
+					origin:"regular",
+					style : {
+						styleId:{
+		                     styleSheetId:new String(styleSheetId),
+		                     ordinal:ordinal
+		                },
+		                shorthandEntries:[],
+		                cssProperties : getCSSStyleProperties(matchedRule.style),
+		                cssText : matchedRule.cssText
+					},
+					ruleId:{
+	                     styleSheetId:new String(styleSheetId),
+	                     ordinal:ordinal
+		            }
+				}
+				
+				matchedCSSRules.push({
+					rule : rule,
+					matchingSelectors : [ 0 ]
+				});
+			}
+		}
+		
+		return {
+    	      matchedCSSRules: matchedCSSRules,
+              pseudoElements:[],
+              inherited:[]
+    	};
+    }
+    
+    /**
+     * Convert CSSStyleDeclaration object to CSSStyle object properties from inspector.json
+     * 
+     * { "name": "styleId", "$ref": "CSSStyleId", "optional": true, "description": "The CSS style identifier (absent for attribute styles)." },
+     * { "name": "cssProperties", "type": "array", "items": { "$ref": "CSSProperty" }, "description": "CSS properties in the style." },
+     * { "name": "shorthandEntries", "type": "array", "items": { "$ref": "ShorthandEntry" }, "description": "Computed values for all shorthands found in the style." },
+     * { "name": "cssText", "type": "string", "optional": true, "description": "Style declaration text (if available)." },
+     * { "name": "range", "$ref": "SourceRange", "optional": true, "description": "Style declaration range in the enclosing stylesheet (if available)." },
+     * { "name": "width", "type": "string", "optional": true, "description": "The effective \"width\" property value from this style." },
+     * { "name": "height", "type": "string", "optional": true, "description": "The effective \"height\" property value from this style." }
+     */
+    function getCSSStyleProperties(style) { 
+    	var cssProperties = [];
+    	
+		// save orignal css properties on first style access 
+		if (!style.JsHybuggerProperties) {
+			for (i=0; i<250; i++) {
+				var name = style.item(i);
+				if (!name) {
+					break;
+				}
+				
+				cssProperties.push({
+					name : name,
+					value : style.getPropertyValue(name),
+					priority : style.getPropertyPriority(name),
+					implicit : style.isPropertyImplicit(name),
+					text : style.getPropertyCSSValue(name).cssText,
+					status : 'active'
+				});
+			}
+
+			style.JsHybuggerProperties = cssProperties;
+			style.setProperty('resize','none');  // trick to keep the css rule bound to the element, if all other attributes are removed
+			                                     // resize is not supported on android devices - so use this property 
+			
+		} else {
+			cssProperties = style.JsHybuggerProperties;
+		}
+		
+		return cssProperties;
+	}
+
+    
+    /**
+     * Process "setPropertyText" message from debug client.
+     */
+    function setPropertyText(params) {
+    	console.log("setPropertyText: " + params.styleId.styleSheetId + ", isNaN: " + isNaN(params.styleId.styleSheetId));
+    	var style = isNaN(params.styleId.styleSheetId) 
+    					? getNodeById(params.styleId.styleSheetId.split(":")[1]).style
+    					: document.styleSheets[params.styleId.styleSheetId].rules[params.styleId.ordinal].style;
+        
+		var attr = params.text.split(":");
+		var name = attr[0];
+		var value = attr[1].substr(0, attr[1].length -1);
+
+		var prop = null;
+		if (!params.overwrite) {  // new property
+			
+			style.setProperty(name, value, null);
+			prop = {
+				name : name,
+				value : style.getPropertyValue(name),
+				priority : style.getPropertyPriority(name),
+				implicit : style.isPropertyImplicit(name),
+				text : params.text,
+				status : 'active'
+			};
+
+			style.JsHybuggerProperties.splice(params.propertyIndex, 0, prop);
+
+		} else {
+			prop = style.JsHybuggerProperties[params.propertyIndex];
+			if (prop.status == 'active') {
+				style.setProperty(name, value, null);
+			}
+			prop.value = value;
+			prop.text = params.text;
+		}
+
+    	sendToDebugService("CSS.styleSheetChanged", { styleSheetId : params.styleId.styleSheetId});
+
+		return {
+	   	     style:{
+				styleId:{
+                     styleSheetId:new String(params.styleId.styleSheetId),
+                     ordinal: params.styleId.ordinal
+                },
+     	         cssProperties: style ? getCSSStyleProperties(style) : [],
+	   	         shorthandEntries:[],
+	   	         width:"",
+	   	         height:"",
+	   	         cssText: style ? style.cssText : ''
+	   	     }
+		     /* attributesStyle : [] optional - not supported  */ 
+	   	};
+    }
+    
+    /**
+     * Process "toggleProperty" message from debug client.
+     */
+    function toggleProperty(params) {
+    	
+    	var style = isNaN(params.styleId.styleSheetId)  // internal styles format: "node:<nodeid>"
+    					? getNodeById(params.styleId.styleSheetId.split(":")[1]).style
+    					: document.styleSheets[params.styleId.styleSheetId].rules[params.styleId.ordinal].style;
+    
+    	var prop = style.JsHybuggerProperties[params.propertyIndex];
+    	if (params.disable) {
+    		style.removeProperty(prop.name);
+    		prop.status = 'disabled';
+    	} else {
+    		style.setProperty(prop.name, prop.value, prop.priority);
+    		prop.status = 'active';
+    	}
+
+    	sendToDebugService("CSS.styleSheetChanged", { styleSheetId : params.styleId.styleSheetId});
+
+		return {
+	   	     style:{
+				styleId:{
+                     styleSheetId:new String(params.styleId.styleSheetId),
+                     ordinal: params.styleId.ordinal
+                },
+     	         cssProperties: style ? getCSSStyleProperties(style) : [],
+	   	         shorthandEntries:[],
+	   	         width:"",
+	   	         height:"",
+	   	         cssText: style ? style.cssText : ''
+	   	     }
+		     /* attributesStyle : [] optional - not supported  */ 
+	   	};
+    }
+
+    /**
+     * Process "getInlineStylesForNode" message from debug client.
+     */
+    function getInlineStylesForNode(params) {
+    	var nodeId = params.nodeId;
+		var node = getNodeById(nodeId);
+
+		return {
+    	     inlineStyle:{
+ 				 styleId:{
+                    styleSheetId:'node:' + nodeId,
+                    ordinal: 0
+                 },
+    	         cssProperties: node ? getCSSStyleProperties(node.style) : [],
+    	         shorthandEntries:[],
+    	         width:"",
+    	         height:"",
+    	         cssText: node ? node.style.cssText : ''
+    	     }
+		     /* attributesStyle : [] optional - not supported  */ 
+    	};
+    }
+    
+    /**
+     * Process "requestChildNodes" message from debug client.
+     */
+    function requestChildNodes(params) {
+
+    	var nodeId = params.nodeId;
+		var node = getNodeById(nodeId);
+		var nodes = node ? getNode(node, 0, 1).children : [];
+		
+		return {
+			parentId : nodeId,
+			nodes : nodes 
+		};
+	}
+
+    /**
+     * Return DOM node for given jsHybugger ID.
+     */
+	function getNodeById(nodeId) {
+		return document.querySelector("[jsHybuggerId='" + nodeId + "']");    	
+    }
+    
+    /**
+     * Process "removeNode" message from debug client.
+     */
+    function removeNode(params) {
+    	var nodeId = params.nodeId;
+		var node = getNodeById(nodeId);
+		if (node.parentNode) {
+			node.parentNode.removeChild(node);
+		}
+    	return {
+    		parentNodeId : node.parentNode ? node.parentNode.getAttribute("jshybuggerid") || 1 : 1,
+    		nodeId : nodeId
+    	};
+    }
+    
+    /**
+     * Returns an array of supported css attributes in the following format. 
+     * [ { name : "background-color"}, { name : "border-color }, ... ]
+     */
+    function getSupportedCSSProperties() {
+    
+    	var cssProps = [];
+    	var styles = window.getComputedStyle(document.body, '');
+    	
+    	for (prop in styles) {
+    		if (!isNaN(prop)) {
+	    		cssProps.push({
+	    			name : styles[prop]
+	    		});
+    		}
+    	}
+
+    	return { cssProperties : cssProps };
+    }
+    
+    /**
+     * Process "getDocument" message from debug client.
+     */
+    function getDocument() {
+    	
+    	var root = getNode(document, 0, 2);
+    	root.documentURL = document.documentURI;
+    	root.baseURL = document.baseURI;
+    	root.xmlVersion = document.xmlVersion;
+    	
+    	return { root : root };
+    }
+
+    var jsHybuggerNodeId=1;
+    function getNode(node, level, maxLevel) {
+    	//console.log("getNode: " + node ? node.nodeName +", " + node.nodeType : 'empty');
+    	
+    	var nodeId = node.getAttribute ? node.getAttribute("jsHybuggerId") : jsHybuggerNodeId++;
+    	if (!nodeId) {
+    		nodeId = jsHybuggerNodeId++;
+    		node.setAttribute("jsHybuggerId", nodeId);
+    	}
+    	
+    	var nodeData = {
+    		nodeId : parseInt(nodeId),	
+    		nodeType : node.nodeType,
+    		nodeName : node.nodeType != 3 ? node.nodeName : '',
+    		localName : node.localName,
+    		nodeValue : node.nodeValue,
+    		attributes : []
+    	};
+    	
+    	// add all node attributes to result
+    	var attrLength = node.attributes ? node.attributes.length : 0;
+    	for (i=0; i < attrLength; i++) {
+    		var attr = node.attributes[i];
+        	if (attr.nodeName == 'jshybuggerid') { // skip jshybugger properties
+        		continue;
+        	}
+        	nodeData.attributes.push(attr.nodeName);
+    		nodeData.attributes.push(attr.nodeValue);
+    	}
+    	
+    	// add child nodes to result
+    	nodeData.childNodeCount = node.childNodes.length;
+    	if (level++ < maxLevel) {
+    		nodeData.children = [];
+	    	for (x=0; x < nodeData.childNodeCount; x++) {
+	    		var newNode = node.childNodes[x];
+	    		if (newNode.nodeType == 3) {  // skip whitespace nodes
+	    			if (!NOT_WHITESPACE_MATCHER.test(newNode.nodeValue)) {
+	    				continue;
+	    			}
+	    		}
+    			nodeData.children.push(getNode(newNode, level, maxLevel));
+	    	}
+    	}
+    	
+    	return nodeData;
     }
     
     /**
@@ -514,15 +886,12 @@ window.JsHybugger = (function() {
      */
     function getResourceTree(cmd) {
     
-    	var id = new Date().getTime() % 3600;
-    	
-    	var prot = 'content://jsHybugger.org/';
     	var result = {
     		frameTree : {
     			frame : {
-    				id : id + '.1',
-    				url : document.location.href.indexOf(prot) == 0 ? document.location.href.substr(prot.length) : document.location.href,
-    				loaderId: id + '.2',
+    				id : FRAME_ID,
+    				url : document.location.href.indexOf(PROTOCOL) == 0 ? document.location.href.substr(PROTOCOL.length) : document.location.href,
+    				loaderId: FRAME_ID,
     				securityOrigin : document.location.origin,
     				mimeType : 'text/html'
     			},
@@ -539,7 +908,7 @@ window.JsHybugger = (function() {
     		}
     		result.frameTree.resources.push({
     			// remove content provider
-    			url : src.indexOf(prot) == 0 ? src.substr(prot.length) : src,
+    			url : src.indexOf(PROTOCOL) == 0 ? src.substr(PROTOCOL.length) : src,
     			type : 'Script',
     			mimeType : 'text/x-js'
     		});
@@ -561,28 +930,55 @@ window.JsHybugger = (function() {
     		
     		result.frameTree.resources.push({
     			// remove content provider
-    			url : src.indexOf(prot) == 0 ? src.substr(prot.length) : src,
+    			url : src.indexOf(PROTOCOL) == 0 ? src.substr(PROTOCOL.length) : src,
     			type : 'Image',
     			mimeType : mimeType
     		});
     	}
 
     	// get all stylesheet resources
-    	/* disabled - not supported
+    	/* disabled - not supported*/
     	var styles = document.getElementsByTagName("link"); 
     	for (var i = 0; i < styles.length; i++) {
     		var src = styles[i].href;
     		if (src && styles[i].rel == 'stylesheet') {
+    			var url = src.indexOf(PROTOCOL) == 0 ? src.substr(PROTOCOL.length) : src;
 	    		result.frameTree.resources.push({
 	    			// remove content provider
-	    			url : src.indexOf(prot) == 0 ? src.substr(prot.length) : src,
+	    			url : url,
 	    			type : 'Stylesheet',
 	    			mimeType : 'text/css'
 	    		});
     		}
     	}
-        */
+        
     	return result;
+    }
+    
+    function processStylesheets() {
+    	
+    	var styles = document.styleSheets; 
+    	for (var i = 0; i < styles.length; i++) {
+    	    // assign stylesheet an ID for easier relation mapping
+    		styles[i].styleSheetId=i;  
+    		var href = styles[i].href ? styles[i].href : document.location.href;
+    		
+    		// strip content protocol
+			href = href && href.indexOf(PROTOCOL) == 0 ? href.substr(PROTOCOL.length) : null;
+    		sendToDebugService("CSS.styleSheetAdded", {
+    			header:{
+    		         styleSheetId:i,
+    		         origin:"regular",
+    		         disabled:styles[i].disabled,
+    		         sourceURL:href,
+    		         title:styles[i].title,
+    		         frameId:FRAME_ID,
+    		         isInline:styles[i].href==null,
+    		         startLine:0,
+    		         startColumn:0
+    		      }
+    		});
+    	}
     }
     
     function getStacktrace() {
@@ -909,8 +1305,7 @@ window.JsHybugger = (function() {
      */
 	function initHybugger() {
 		replaceConsole();
-		sendToDebugService('GlobalInitHybugger', { 
-        });
+		sendToDebugService('GlobalInitHybugger', { frameId : FRAME_ID  });
 	};
 
 	// intercept setItems, removeItems, clear method calls and notify jsHybugger
@@ -975,7 +1370,7 @@ window.JsHybugger = (function() {
      */
     function pageLoaded() {
         
-		var cmd = sendToDebugService('GlobalPageLoaded', {        });
+		var cmd = sendToDebugService('GlobalPageLoaded', {  frameId : FRAME_ID  });
        	// before returning - process all pending queue messages 
        	while ((msg = JsHybuggerNI.getQueuedMessage(false)) != null) {
        		processCommand(parseSafe(msg),null);

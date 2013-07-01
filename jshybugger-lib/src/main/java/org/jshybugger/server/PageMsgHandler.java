@@ -207,6 +207,15 @@ public class PageMsgHandler extends AbstractMsgHandler {
 	private void sendLoadEventFired(WebSocketConnection conn, JSONObject msg) throws JSONException {
 		
 		if (conn != null) {
+			
+			conn.send(new JSONStringer().object()
+					.key("method").value("Page.frameStartedLoading")
+						.key("params").object()
+					    	.key("frameId").value(msg.get("frameId"))
+						.endObject()
+					.endObject()
+				.toString());
+
 			conn.send(new JSONStringer().object()
 				.key("method").value("Page.loadEventFired")
 					.key("params").object()
@@ -235,6 +244,14 @@ public class PageMsgHandler extends AbstractMsgHandler {
 					.endObject()
 				.endObject()
 			.toString());
+
+			conn.send(new JSONStringer().object()
+					.key("method").value("Page.frameStoppedLoading")
+						.key("params").object()
+					    	.key("frameId").value(msg.get("frameId"))
+						.endObject()
+					.endObject()
+				.toString());
 		}
 	}
 }

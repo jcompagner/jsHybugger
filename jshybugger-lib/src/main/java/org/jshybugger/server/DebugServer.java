@@ -34,7 +34,7 @@ import org.webbitserver.WebServers;
  */
 public class DebugServer {
 
-	private static final String CHROME_DEVTOOLS_FRONTEND = "https://chrome-devtools-frontend.appspot.com/static/29.0.1546.0/devtools.html?ws=%s/devtools/page/%s";
+	private static final String CHROME_DEVTOOLS_FRONTEND = "https://chrome-devtools-frontend.appspot.com/static/30.0.1549.0/devtools.html?ws=%s/devtools/page/%s";
 	private WebServer webServer;
 	private DomainSocketServer domainSocketServer;
 	
