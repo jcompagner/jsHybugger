@@ -145,7 +145,7 @@ public class DebugSession extends BaseWebSocketHandler {
 			JSONObject message = new JSONObject(strMessage);
 				
 			String[] method = message.getString("method").split("[\\.]");
-			MessageHandler handler = HANDLERS.get(method[0]);
+			MessageHandler handler = getMessageHandler(method[0]);
 			
 			if (handler != null) {
 				handler.onReceiveMessage(conn, method[1], message);
@@ -171,7 +171,7 @@ public class DebugSession extends BaseWebSocketHandler {
 	 */
 	public void sendMessage(String handlerMethod, JSONObject message ) throws JSONException {
 		String[] method = handlerMethod.split("[\\.]");
-		MessageHandler handler = HANDLERS.get(method[0]);
+		MessageHandler handler = getMessageHandler(method[0]);
 		if (handler != null) {
 			sendHandlerMessage(message, method[1], handler);
 		} else if (method.length == 1) {

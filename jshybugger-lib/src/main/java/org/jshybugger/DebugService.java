@@ -111,7 +111,7 @@ public class DebugService extends Service {
 		
 		//Log.d(TAG, "onStartCommand: " + intent);
 		extractCallbackHandler(intent);
-		return START_STICKY;
+		return Service.START_NOT_STICKY;
 	}
 	
 	/**

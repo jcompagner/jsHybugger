@@ -22,6 +22,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -30,7 +31,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.jshybugger.instrumentation.JsCodeLoader;
 import org.jshybugger.server.Md5Checksum;
@@ -85,7 +90,7 @@ public class DebugContentProvider extends ContentProvider {
 	private static final String DEFAULT_PROVIDER_PROTOCOL = "content://jsHybugger.org/";
 
 	/** The debug service started. */
-	private CountDownLatch debugServiceStarted = new CountDownLatch(2);
+	private CountDownLatch debugServiceStarted = new CountDownLatch(1);
 	
 	/** The debug service msg handler. */
 	private DebugServiceMsgHandler debugServiceMsgHandler = new DebugServiceMsgHandler(debugServiceStarted);
@@ -93,6 +98,10 @@ public class DebugContentProvider extends ContentProvider {
 	private File CACHE_DIR = null;
 	private File CHANGED_CACHE_DIR=null;
 	
+	private Map<String,Object> providerProperties = new HashMap<String,Object>();
+
+	private Pattern excludePattern = Pattern.compile("\\.min\\.js");
+
 
 	/**
 	 * Gets the provider protocol.
@@ -118,19 +127,37 @@ public class DebugContentProvider extends ContentProvider {
 	public ParcelFileDescriptor openFile(Uri uri, String mode) {
 
 		// wait here till sync debug service is started
-		prepareStartupAndWait();
-		
+		try {
+			debugServiceStarted.await();
+		} catch (InterruptedException e1) {
+			Log.e(TAG, "Waiting for debug service interrupted");
+		}
+
         String url = uri.getPath().substring(1);
 		InputResource resource = null;
 		
 		try {
 			// get original source
-			resource = openInputFile(url);
-
 			File cacheFile = null;
-			if (resource.isJs()) {
+			try {
+				resource = openInputFile(url);
+			} catch (FileNotFoundException fex) {
 				cacheFile = searchCacheFile(url);
+				// could only be true for on the fly generated resources
+				if (cacheFile.exists()) {
+					// check if an instrumented file version exits.
+					File instrumentedFile = searchCacheFile(url + INSTRUMENTED_FILE_APPENDIX);
+					if (instrumentedFile.exists()) {
+						return ParcelFileDescriptor.open(instrumentedFile, ParcelFileDescriptor.MODE_READ_ONLY);
+					}
+					return ParcelFileDescriptor.open(cacheFile, ParcelFileDescriptor.MODE_READ_ONLY);
+				}
+			}
+
+			if (resource.isJs()) { 
+				
 				String resourceHash = calcResourceHash(resource);
+				cacheFile = searchCacheFile(url);
 				
 				if (cacheFile.exists() && isCacheFileValid(resourceHash, cacheFile)) {
 					
@@ -154,12 +181,12 @@ public class DebugContentProvider extends ContentProvider {
 				
 				return pipe[0];
 				
-			} else if (resource.isJs() && !url.endsWith(".min.js")) {
+			} else if (resource.isJs() && !excludePattern.matcher(url).find()) {
 
 				// instrument js code
 				File outFile = getInstrumentedCacheFile(cacheFile);
 				try {
-					JsCodeLoader.instrumentFile(resource.getInputStream(), url, new FileOutputStream(outFile));
+					JsCodeLoader.instrumentFile(url, resource.getInputStream(), new FileOutputStream(outFile), providerProperties);
 					
 					// return instrumented js code
 					return ParcelFileDescriptor.open(outFile, ParcelFileDescriptor.MODE_READ_ONLY);
@@ -257,31 +284,19 @@ public class DebugContentProvider extends ContentProvider {
 		return loadUrlFd;
 	}
 
-	private void prepareStartupAndWait() {
-		try {
-			synchronized (debugServiceStarted) {
-				 
-				if (debugServiceStarted.getCount() > 0 ) {
-					CACHE_DIR = new File(getContext().getFilesDir(), ".jsHybugger");
-					if (!CACHE_DIR.exists() && !CACHE_DIR.mkdir()) {
-						Log.e(TAG, "Creating jsHybugger cache failed. "  + CACHE_DIR.getAbsolutePath());
-					}
-					CHANGED_CACHE_DIR = new File(CACHE_DIR, ".changed");
-					if (!CHANGED_CACHE_DIR.exists() && !CHANGED_CACHE_DIR.mkdir()) {
-						Log.e(TAG, "Creating jsHybugger changed cache failed. "  + CHANGED_CACHE_DIR.getAbsolutePath());
-					}
-					
-					// clear all files in changed cache
-	        		for (File file : CHANGED_CACHE_DIR.listFiles()) {
-	        			file.delete();
-	        		}
-					debugServiceStarted.countDown();
-				}
-			}
-
-			debugServiceStarted.await();
-		} catch (InterruptedException e1) {
-			Log.e(TAG, "Waiting for debug service interrupted");
+	private void prepareCache() {
+		CACHE_DIR = new File(getContext().getFilesDir(), ".jsHybugger");
+		if (!CACHE_DIR.exists() && !CACHE_DIR.mkdir()) {
+			Log.e(TAG, "Creating jsHybugger cache failed. "  + CACHE_DIR.getAbsolutePath());
+		}
+		CHANGED_CACHE_DIR = new File(CACHE_DIR, ".changed");
+		if (!CHANGED_CACHE_DIR.exists() && !CHANGED_CACHE_DIR.mkdir()) {
+			Log.e(TAG, "Creating jsHybugger changed cache failed. "  + CHANGED_CACHE_DIR.getAbsolutePath());
+		}
+		
+		// clear all files in changed cache
+		for (File file : CHANGED_CACHE_DIR.listFiles()) {
+			file.delete();
 		}
 	}
 
@@ -308,11 +323,18 @@ public class DebugContentProvider extends ContentProvider {
 
 		if (url.endsWith("jshybugger.js")) {
 			
-        	return new InputResource(
+        	InputStream resourceAsStream = null;
+        	try {
+        		// try to search jshybugger.js in assets  folder if not found -> search classpath
+        		resourceAsStream = getContext().getAssets().open("jshybugger.js");
+        	} catch (FileNotFoundException fex) {
+        		resourceAsStream = getClass().getResourceAsStream("/jshybugger.js");
+        	}
+			return new InputResource(
         			false,  // don't mark it as js resource, because we don't want instrumentation for this file 
         			false, 
-        			new BufferedInputStream(getClass().getClassLoader().getResourceAsStream("jshybugger.js")));
-			
+        			new BufferedInputStream(resourceAsStream));
+        	
 		} else if (url.startsWith(ANDROID_ASSET_URL)) {   // Must be a local file
         	url = url.substring(ANDROID_ASSET_URL.length());
 
@@ -379,9 +401,22 @@ public class DebugContentProvider extends ContentProvider {
 		try {
 			ProviderInfo info = getContext().getPackageManager().getProviderInfo(new ComponentName(getContext(), DebugContentProvider.class), PackageManager.GET_PROVIDERS|PackageManager.GET_META_DATA);
 			Bundle metaData = info.metaData;
-			if (metaData != null && metaData.getString("debugServiceClass") != null) {
-				service = new Intent(getContext(), Class.forName(metaData.getString("debugServiceClass")));
-			} 
+			if (metaData != null) {
+				if (metaData.getString("debugServiceClass") != null) {
+					service = new Intent(getContext(), Class.forName(metaData.getString("debugServiceClass")));
+				} 
+			
+				providerProperties.put(JsCodeLoader.INSTRUMENT_STACKSIZE, 
+						metaData.getInt(JsCodeLoader.INSTRUMENT_STACKSIZE, JsCodeLoader.DEFAULT_INSTRUMENT_STACKSIZE));
+				
+				if (metaData.getString("excludePattern") != null) {
+					try {
+						excludePattern  = Pattern.compile(metaData.getString("excludePattern"));
+					} catch (PatternSyntaxException pse) {
+						Log.e(TAG, "invalid excludePattern: " + pse.getMessage());
+					}
+				}
+			}
 			
 			Log.d(TAG, "Content provider started: " + info.authority);
 		} catch (NameNotFoundException e) {
@@ -390,6 +425,7 @@ public class DebugContentProvider extends ContentProvider {
 			Log.e(TAG, "ContentProvider component debug service not found", e );
 		}
 		
+		prepareCache();
 				 
 		// initiate debug service start, and pass message handler to receive debug service started message.
 		service.putExtra("callback", new Messenger(debugServiceMsgHandler));
@@ -419,9 +455,6 @@ public class DebugContentProvider extends ContentProvider {
 	 */
 	@Override
 	public Uri insert(Uri uri, ContentValues content) {
-		// wait here till sync debug service is started 
-		prepareStartupAndWait();
-		
 		return saveContent(uri, content.getAsString("scriptSource"), CACHE_DIR);
 	}
 	
@@ -435,6 +468,13 @@ public class DebugContentProvider extends ContentProvider {
 					new InputResource(true, false, new BufferedInputStream(new ByteArrayInputStream(scriptSource.getBytes())));			
 
 			String resourceHash = calcResourceHash(resource);
+			
+			// for on the fly saved js code - uri can be null -> generate uri name based on file content hash
+			if (url.isEmpty()) {
+				url = "jshybugger_" + resourceHash + ".js";
+				uri = Uri.parse(getProviderProtocol(getContext()) + url);
+			}
+			
 			File cacheFile = new File(cache, getCacheItemName(url));
 
 			if (!cacheFile.exists() || !isCacheFileValid(resourceHash, cacheFile)) {
@@ -444,7 +484,9 @@ public class DebugContentProvider extends ContentProvider {
 				// instrument js code
 				File outFile =  getInstrumentedCacheFile(cacheFile);
 				try {
-					JsCodeLoader.instrumentFile(resource.getInputStream(), url, new FileOutputStream(outFile));
+					if (!excludePattern.matcher(url).find()) {
+						JsCodeLoader.instrumentFile(url, resource.getInputStream(), new FileOutputStream(outFile), providerProperties);
+					}
 					return uri;
 					
 				} catch (EvaluatorException e) {
@@ -550,9 +592,6 @@ public class DebugContentProvider extends ContentProvider {
 	 */
 	@Override
 	public int update(Uri uri, ContentValues content, String arg2, String[] arg3) {
-		// wait here till sync debug service is started 
-		prepareStartupAndWait();
-		
 		Uri rUri = saveContent(uri, content.getAsString("scriptSource"), CHANGED_CACHE_DIR);
 		return rUri != null ? 1 : 0;
 	}

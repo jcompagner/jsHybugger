@@ -872,6 +872,9 @@ window.JsHybugger = (function() {
 	    			if (!NOT_WHITESPACE_MATCHER.test(newNode.nodeValue)) {
 	    				continue;
 	    			}
+	    		} else if ((newNode.nodeName === 'SCRIPT') && (newNode.src != null) && /jshybugger.js$/.test(newNode.src)) {
+	    			// skip jshybugger script node
+	    			continue;
 	    		}
     			nodeData.children.push(getNode(newNode, level, maxLevel));
 	    	}
