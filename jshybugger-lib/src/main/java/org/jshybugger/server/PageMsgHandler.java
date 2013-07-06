@@ -217,6 +217,20 @@ public class PageMsgHandler extends AbstractMsgHandler {
 				.toString());
 
 			conn.send(new JSONStringer().object()
+					.key("method").value("Page.frameNavigated")
+						.key("params").object()
+							.key("frame").object()
+					    		.key("id").value(msg.get("frameId"))
+					    		.key("loaderId").value(msg.get("frameId"))
+					    		.key("url").value(msg.get("url"))
+					    		.key("securityOrigin").value(msg.get("securityOrigin"))
+					    		.key("mimeType").value("text/html")
+					    	.endObject()
+						.endObject()
+					.endObject()
+				.toString());
+			
+			conn.send(new JSONStringer().object()
 				.key("method").value("Page.loadEventFired")
 					.key("params").object()
 				    	.key("timestamp").value(System.currentTimeMillis())

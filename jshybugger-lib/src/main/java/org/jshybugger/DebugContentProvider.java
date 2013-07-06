@@ -75,6 +75,7 @@ public class DebugContentProvider extends ContentProvider {
 	public static final String INSTRUMENTED_FILE_APPENDIX = ".instr";
 
 	public static final String ORIGNAL_SELECTION = "original";
+	public static final String IS_CACHED_SELECTION = "isCached";
 
 	private static final String FILE_HASH_PREFIX = ".hash";
 	
@@ -138,21 +139,17 @@ public class DebugContentProvider extends ContentProvider {
 		
 		try {
 			// get original source
-			File cacheFile = null;
-			try {
-				resource = openInputFile(url);
-			} catch (FileNotFoundException fex) {
-				cacheFile = searchCacheFile(url);
-				// could only be true for on the fly generated resources
-				if (cacheFile.exists()) {
-					// check if an instrumented file version exits.
-					File instrumentedFile = searchCacheFile(url + INSTRUMENTED_FILE_APPENDIX);
-					if (instrumentedFile.exists()) {
-						return ParcelFileDescriptor.open(instrumentedFile, ParcelFileDescriptor.MODE_READ_ONLY);
-					}
-					return ParcelFileDescriptor.open(cacheFile, ParcelFileDescriptor.MODE_READ_ONLY);
+			File cacheFile = searchCacheFile(url);
+			// if the file exists in the "changed" cache - then return the file - and stop further checks/processing 
+			if (cacheFile.exists() && isChangedCacheFile(cacheFile)) {
+				File instrumentedFile = searchCacheFile(url + INSTRUMENTED_FILE_APPENDIX);
+				if (instrumentedFile.exists() && isChangedCacheFile(instrumentedFile)) {
+					return ParcelFileDescriptor.open(instrumentedFile, ParcelFileDescriptor.MODE_READ_ONLY);
 				}
+				return ParcelFileDescriptor.open(cacheFile, ParcelFileDescriptor.MODE_READ_ONLY);
 			}
+			
+			resource = openInputFile(url);
 
 			if (resource.isJs()) { 
 				
@@ -225,6 +222,10 @@ public class DebugContentProvider extends ContentProvider {
 		return null;
     }
 
+	private boolean isChangedCacheFile(File cacheFile) {
+		return cacheFile.getAbsolutePath().startsWith(CHANGED_CACHE_DIR.getAbsolutePath());
+	}
+
 	private void writeCacheFile(InputResource resource, String resourceHash,
 			File cacheFile) throws IOException {
 		
@@ -282,6 +283,12 @@ public class DebugContentProvider extends ContentProvider {
 		}
 		loadUrlFd = new File(CACHE_DIR, loadUrl);
 		return loadUrlFd;
+	}
+	
+	private boolean deleteCacheFile(File cache, String url) {
+		String loadUrl = getCacheItemName(url);
+		File loadUrlFd = new File(cache, loadUrl);
+		return loadUrlFd.delete();
 	}
 
 	private void prepareCache() {
@@ -479,6 +486,7 @@ public class DebugContentProvider extends ContentProvider {
 
 			if (!cacheFile.exists() || !isCacheFileValid(resourceHash, cacheFile)) {
 
+				deleteCacheFile(CHANGED_CACHE_DIR, uri.getPath().substring(1));
 				writeCacheFile(resource, resourceHash, cacheFile);
 			
 				// instrument js code
@@ -493,7 +501,7 @@ public class DebugContentProvider extends ContentProvider {
 			        Log.d(TAG, "parsing failure while instrumenting file: " + e.getMessage());
 
 			        // delete file - maybe partially instrumented file.
-			        outFile.delete();
+			        //outFile.delete();
 			        
 					String writeConsole = e.getMessage();
 					throw new RuntimeException(writeConsole);
@@ -501,7 +509,7 @@ public class DebugContentProvider extends ContentProvider {
 			        Log.d(TAG, "instrumentation failed: " + uri, e);
 
 			        // delete file - maybe partially instrumented file.
-			        outFile.delete();
+			        //outFile.delete();
 			        
 					throw new RuntimeException("instrumentation failed: " + uri, e);
 					
@@ -534,9 +542,17 @@ public class DebugContentProvider extends ContentProvider {
 		try {
 	        BufferedInputStream inputStream = null;
 			File cacheFile = searchCacheFile(url);
-			
+
+			// special columns "isCached" - just checks the cache and return 
+			if (IS_CACHED_SELECTION.equals(columns[0])) {
+				if (cacheFile.exists()) {
+					cursor.addRow(new Object[] { true });
+				}
+				return cursor;
+			}
+
 			if (cacheFile.exists()) {
-				
+
 				File instrumentedFile = getInstrumentedCacheFile(cacheFile);
 				if (!ORIGNAL_SELECTION.equals(selection) && instrumentedFile.exists()) {
 					inputStream = new BufferedInputStream(new FileInputStream(instrumentedFile));
@@ -580,8 +596,7 @@ public class DebugContentProvider extends ContentProvider {
 			}
 			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Log.e(TAG, "query failed", e);
 		}
 		
 		return cursor;

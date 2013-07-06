@@ -16,6 +16,8 @@
 package org.jshybugger.server;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.json.JSONException;
@@ -39,28 +41,33 @@ public class DebugServer {
 	private DomainSocketServer domainSocketServer;
 	
 	private CountDownLatch debugServerStarted = new CountDownLatch(1);
+	private List<DebugSession> debugSessions  = new ArrayList<DebugSession>();
 	
 	/**
 	 * Instantiates a new debug server.
 	 *
-	 * @param port the tcp listen port number
+	 * @param debugPort the tcp listen port number
+	 * @param domainSocketName TODO
 	 * @param application the application context
 	 * @throws UnknownHostException the unknown host exception
 	 */
-	public DebugServer( int port) throws UnknownHostException {
+	public DebugServer(final int debugPort, final String domainSocketName) throws UnknownHostException {
 		
 		Thread webServerThread = new Thread(new Runnable() {
 
 			@Override
 			public void run() {
 				
-				webServer = WebServers.createWebServer( 8888)
+				webServer = WebServers.createWebServer( debugPort)
 	                .add("/", new HttpHandler() {
 	
 	                    @Override
 	                    public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) {
-	                        response.status(301).header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-	                        	.header("Location", String.format(CHROME_DEVTOOLS_FRONTEND, request.header("Host"), "1")).end();
+	                        response.status(301).header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+	                        if (!debugSessions.isEmpty()) {
+	                        	response.header("Location", String.format(CHROME_DEVTOOLS_FRONTEND, request.header("Host"), debugSessions.get(0).getSessionId()));
+	                        }
+	                        response.end();
 	                    }
 	                })
 	                .add("/json/version", new HttpHandler() {
@@ -68,7 +75,7 @@ public class DebugServer {
 	                    public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) {
 	                    	try {
 								String res = new JSONStringer().object()
-										.key("Browser").value("jsHybugger")
+										.key("Browser").value("jsHybugger 1.2.0")
 										.key("Protocol-Version").value("1.0")
 									 .endObject().toString();
 								
@@ -86,20 +93,24 @@ public class DebugServer {
 	                    public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) {
 	                    	try {
 	                    		String host = request.header("Host");
-								String res = new JSONStringer().array().object()
+								JSONStringer res = new JSONStringer().array();
 								
+								for (DebugSession dbgSession : debugSessions) {
+									
+									res.object()
 										.key("devtoolsFrontendUrl").value(String.format(CHROME_DEVTOOLS_FRONTEND, host != null ? host : "//" , "1"))
 										.key("faviconUrl").value("http://www.jshybugger.org/favicon.ico")
 									    .key("thumbnailUrl").value("/thumb/")
 									    .key("title").value("jsHybugger powered debugging")
 									    .key("url").value("content://jsHybugger.org/")
-									    .key("webSocketDebuggerUrl").value("ws://" + (host != null ? host : "") + "/devtools/page/1")
-									    
-									 .endObject().endArray().toString();
+									    .key("webSocketDebuggerUrl").value("ws://" + (host != null ? host : "") + "/devtools/page/" + dbgSession.getSessionId())
+   								    .endObject();
+								}
 								
+								res.endArray();
 								
 								response.header("Content-type", "application/json")
-									.content(res)
+									.content(res.toString())
 									.end();
 								
 							} catch (JSONException e) {
@@ -114,13 +125,14 @@ public class DebugServer {
 		});
 		webServerThread.start();
 		
-		domainSocketServer = new DomainSocketServer();
+		domainSocketServer = new DomainSocketServer(domainSocketName, debugPort);
 		domainSocketServer.start();
 	}
 
 	public void exportSession(DebugSession debugSession) throws InterruptedException {
 		debugServerStarted.await();
-		webServer.add("/devtools/page/1", debugSession);
+		webServer.add("/devtools/page/" + debugSession.getSessionId(), debugSession);
+		debugSessions.add(debugSession);
 	}
 	
 	public void addHandler(String path, HttpHandler handler) throws InterruptedException {

@@ -26,18 +26,22 @@ public class DomainSocketServer extends Thread {
 	/** The Constant DESTINATION_HOST. */
     public static final String DESTINATION_HOST = "127.0.0.1"; 
     
-    /** The Constant DESTINATION_PORT. */
-    public static final int DESTINATION_PORT = 8888;
-	
 	/** The thread pool. */
 	private ExecutorService threadPool;
 
-	private LocalServerSocket serverSocket; 
+	private LocalServerSocket serverSocket;
+
+	private String domainSocketName;
+
+	private int forwarPort; 
  
     /**
      * Instantiates a new domain socket server.
+     * @param domainSocketName Name of the domain socket
      */
-    public DomainSocketServer() { 
+    public DomainSocketServer(String domainSocketName, int forwarPort) {
+    	this.forwarPort = forwarPort;
+    	this.domainSocketName = (domainSocketName != null ? domainSocketName : "jshybugger") + "_devtools_remote";
     }
     
     /**
@@ -46,7 +50,7 @@ public class DomainSocketServer extends Thread {
     public void run() {
 		
 		try {
-			serverSocket = new LocalServerSocket("jshybugger_devtools_remote");			
+			serverSocket = new LocalServerSocket(domainSocketName);			
 			threadPool = Executors.newCachedThreadPool();
 
 			while (!isInterrupted()) { 
@@ -109,7 +113,7 @@ public class DomainSocketServer extends Thread {
                 // Connect to the destination server 
                 mServerSocket = new Socket( 
                 		DomainSocketServer.DESTINATION_HOST, 
-                		DomainSocketServer.DESTINATION_PORT); 
+                		forwarPort); 
      
                 // Turn on keep-alive for both the sockets 
                 mServerSocket.setKeepAlive(true); 
@@ -122,7 +126,7 @@ public class DomainSocketServer extends Thread {
             } catch (IOException ioe) { 
             	Log.e(TAG, "Can not connect to " + 
                 		DomainSocketServer.DESTINATION_HOST + ":" + 
-                		DomainSocketServer.DESTINATION_PORT); 
+                		forwarPort); 
                 connectionBroken(); 
                 return; 
             } 

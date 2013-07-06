@@ -30,6 +30,7 @@ window.JsHybugger = (function() {
     var blockModeActive = false;
 	var databases = [];
 	var globalWatches = {};
+	var objectGroups = {};
 	var continueToLocation;
 	var breakpointsActive = true;
 	var pauseOnExceptionsState = 'none';
@@ -74,7 +75,7 @@ window.JsHybugger = (function() {
 		   }
 		}
 		pushChannel.timeout = 30000;
-		pushChannel.open('GET', 'http://localhost:8888/jshybugger/pushChannel', true);
+		pushChannel.open('GET', 'http://localhost:8889/jshybugger/pushChannel', true);
 		pushChannel.send();
 	}
     
@@ -86,7 +87,7 @@ window.JsHybugger = (function() {
 		      response = xmlObj.status == '200' && xmlObj.responseText && xmlObj.responseText.length > 0 ? xmlObj.responseText : null;
 		   }
 		}
-		xmlObj.open ('POST', 'http://localhost:8888/jshybugger/' + cmd, false);
+		xmlObj.open ('POST', 'http://localhost:8889/jshybugger/' + cmd, false);
 		xmlObj.send (stringifySafe(data));
 		
 		return response;
@@ -301,8 +302,18 @@ window.JsHybugger = (function() {
 	        		
 	        	case 'releaseObjectGroup':
 	        		return runSafe('releaseObjectGroup', function() {
-	        			for (p in globalWatches) {
-	        				delete globalWatches[p];
+	        			var group = cmd.data.params.objectGroup;
+	        			var objects = objectGroups[group];
+	        			if (group) {
+		        			if (objects) {
+			        			for (var i=objects.length-1; i>=0; i--) {
+			        				delete globalWatches[objects[i]];
+			        			}
+			        			delete objectGroups[group];
+		        			}
+	        			} else {
+	        				objectGroups = {};
+	        				globalWatches = {};
 	        			}
 	        		}, true);
 	        	
@@ -326,7 +337,8 @@ window.JsHybugger = (function() {
 	        		return runSafe('getResourceTree', function() {
 	        			JsHybuggerNI.sendReplyToDebugService(cmd.replyId, stringifySafe(getResourceTree(cmd)));
 	        			
-	        			processStylesheets();
+	        			// for version 2.0 
+	        			//processStylesheets();
 	        			
 	        		}, true);
 	        		
@@ -1116,7 +1128,8 @@ window.JsHybugger = (function() {
 
         var response = {};
         var params = cmd.data.params;
-        
+        var objectGroup = params.objectGroup || 'global';
+
         try {
             var evalResult = stack && stack.evalScope ? stack.evalScope(params.expression) : eval(params.expression);
             if (stack) {
@@ -1145,7 +1158,11 @@ window.JsHybugger = (function() {
             	} else {
                 	var exprID = "ID" + new Date().getTime();
                 	globalWatches[exprID] = evalResult ;
-            		
+                	if (!objectGroups[objectGroup]) {
+                		objectGroups[objectGroup] = [];
+                	}  
+                	objectGroups[objectGroup].push(exprID);
+                		
             		response.objectId = "global:" + exprID;
             		if (response.type == 'object') {
             			response.description = evalResult.constructor ? evalResult.constructor.name : 'object';
@@ -1308,7 +1325,7 @@ window.JsHybugger = (function() {
      */
 	function initHybugger() {
 		replaceConsole();
-		sendToDebugService('GlobalInitHybugger', { frameId : FRAME_ID  });
+		sendToDebugService('GlobalInitHybugger', { frameId : FRAME_ID, url : location.href, securityOrigin : location.origin  });
 	};
 
 	// intercept setItems, removeItems, clear method calls and notify jsHybugger

@@ -82,6 +82,15 @@ public class JsCodeLoader {
 							writer.close();
 							
 						} catch (EvaluatorException e) {
+							BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream));
+							try {
+								writer.write("JsHybugger.loadFile('" + scriptUri + "',0)");
+								writer.close();
+							} catch (IOException e1) {
+								parseExceptions.add(e1);
+								return;
+							}
+							
 							parseExceptions.add(e);
 						} catch (IOException e) {
 							parseExceptions.add(e);

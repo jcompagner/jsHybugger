@@ -20,6 +20,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import org.jshybugger.DebugContentProvider;
 import org.json.JSONException;
@@ -56,6 +57,8 @@ public class DebugSession extends BaseWebSocketHandler {
 	private BrowserInterface browserInterface;
 	
 	public final String PROVIDER_PROTOCOL;
+
+	private final String sessionId;
 	
 	
 	/**
@@ -86,11 +89,12 @@ public class DebugSession extends BaseWebSocketHandler {
 		msgHandler = new DatabaseMsgHandler(this);
 		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
 		
-		msgHandler = new DOMMsgHandler(this);
-		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
+		//msgHandler = new DOMMsgHandler(this);
+		//HANDLERS.put(msgHandler.getObjectName(), msgHandler);
 
-		msgHandler = new CssMsgHandler(this);
-		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
+		//msgHandler = new CssMsgHandler(this);
+		//HANDLERS.put(msgHandler.getObjectName(), msgHandler);
+		sessionId = UUID.randomUUID().toString();
 	}
 	
 	public void setBrowserInterface(BrowserInterface browserInterface) {
@@ -231,13 +235,19 @@ public class DebugSession extends BaseWebSocketHandler {
 				null);
 		
 		String resourceContent=null;
-		if (cursor != null && cursor.moveToFirst()) {
-			resourceContent = cursor.getString(0);
+		if (cursor != null) {
+			if (cursor.moveToFirst()) {
+				resourceContent = cursor.getString(0);
+			}
 			cursor.close();
 		}
 		
 		Log.d(TAG, "loadScriptResourceById - length: " + (resourceContent != null ? resourceContent.length() : 0));
 		
 		return resourceContent;
+	}
+
+	public String getSessionId() {
+		return sessionId;
 	}
 }
