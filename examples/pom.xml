@@ -29,7 +29,7 @@
 	<name>jsHybugger - Examples</name>
 
 	<modules>
-		<!-- module>phonegap</module -->
+		<module>phonegap</module>
 		<module>webview</module>
 	</modules>
 	

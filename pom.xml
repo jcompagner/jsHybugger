@@ -33,7 +33,6 @@
 	<modules>
 		<module>jshybugger-lib</module>
 		<module>jshybugger-bundle</module>
-		<module>jshybugger-proxy</module>
 		<module>examples</module>
 	</modules>
 
