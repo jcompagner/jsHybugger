@@ -32,6 +32,15 @@
 		<environment>development</environment>
 	</properties>
 
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.cordova</groupId>
+			<artifactId>cordova</artifactId>
+			<version>2.9.0</version>
+			<scope>system</scope>
+			<systemPath>${basedir}/libs/cordova-2.9.0.jar</systemPath>
+		</dependency>	
+	</dependencies>		
 
 	<build>
 		<finalName>${project.artifactId}</finalName>
