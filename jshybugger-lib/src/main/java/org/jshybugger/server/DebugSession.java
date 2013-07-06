@@ -15,16 +15,14 @@
  */
 package org.jshybugger.server;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
+import org.jshybugger.DebugContentProvider;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
@@ -32,9 +30,8 @@ import org.webbitserver.BaseWebSocketHandler;
 import org.webbitserver.WebSocketConnection;
 
 import android.content.Context;
-import android.content.res.AssetManager;
-import android.util.Base64;
-import android.util.Base64OutputStream;
+import android.database.Cursor;
+import android.net.Uri;
 import android.util.Log;
 
 
@@ -46,9 +43,6 @@ public class DebugSession extends BaseWebSocketHandler {
 
 	/** The Constant TAG. */
 	private static final String TAG = "DebugServer";
-	
-	/** The Constant ANDROID_ASSET_URL. */
-	private static final String ANDROID_ASSET_URL = "file:///android_asset/";
 	
 	/** The message handler list. */
 	private final HashMap<String,MessageHandler> HANDLERS = new HashMap<String,MessageHandler>(); 
@@ -62,6 +56,11 @@ public class DebugSession extends BaseWebSocketHandler {
 	/** The browser API interface. */
 	private BrowserInterface browserInterface;
 	
+	public final String PROVIDER_PROTOCOL;
+
+	private final String sessionId;
+	
+	
 	/**
 	 * Instantiates a new debug server.
 	 *
@@ -70,6 +69,7 @@ public class DebugSession extends BaseWebSocketHandler {
 	 */
 	public DebugSession( Context application ) throws UnknownHostException {
 		this.application = application;
+		PROVIDER_PROTOCOL = DebugContentProvider.getProviderProtocol(application);
 		
 		MessageHandler msgHandler = new DebuggerMsgHandler(this);
 		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
@@ -88,6 +88,13 @@ public class DebugSession extends BaseWebSocketHandler {
 
 		msgHandler = new DatabaseMsgHandler(this);
 		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
+		
+		//msgHandler = new DOMMsgHandler(this);
+		//HANDLERS.put(msgHandler.getObjectName(), msgHandler);
+
+		//msgHandler = new CssMsgHandler(this);
+		//HANDLERS.put(msgHandler.getObjectName(), msgHandler);
+		sessionId = UUID.randomUUID().toString();
 	}
 	
 	public void setBrowserInterface(BrowserInterface browserInterface) {
@@ -142,7 +149,7 @@ public class DebugSession extends BaseWebSocketHandler {
 			JSONObject message = new JSONObject(strMessage);
 				
 			String[] method = message.getString("method").split("[\\.]");
-			MessageHandler handler = HANDLERS.get(method[0]);
+			MessageHandler handler = getMessageHandler(method[0]);
 			
 			if (handler != null) {
 				handler.onReceiveMessage(conn, method[1], message);
@@ -168,7 +175,7 @@ public class DebugSession extends BaseWebSocketHandler {
 	 */
 	public void sendMessage(String handlerMethod, JSONObject message ) throws JSONException {
 		String[] method = handlerMethod.split("[\\.]");
-		MessageHandler handler = HANDLERS.get(method[0]);
+		MessageHandler handler = getMessageHandler(method[0]);
 		if (handler != null) {
 			sendHandlerMessage(message, method[1], handler);
 		} else if (method.length == 1) {
@@ -213,67 +220,34 @@ public class DebugSession extends BaseWebSocketHandler {
 	 * Load script resource by URI.
 	 *
 	 * @param scriptUri the script URI to load
-	 * @param encode TODO
-	 * @return the javascript content 
+	 * @param encode true to use base64 encoding
+	 * @return the file resource content 
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	public String loadScriptResourceById(String scriptUri, boolean encode) throws IOException {
 		
 		Log.d(TAG, "loadScriptResourceById: " + scriptUri);
 		
-		BufferedInputStream inputStream = new BufferedInputStream(openInputFile(scriptUri));
-		ByteArrayOutputStream byteOut = new ByteArrayOutputStream(inputStream.available());
-		OutputStream outStream = null;
-		
-		if (encode) {
-			outStream = new Base64OutputStream(byteOut, Base64.DEFAULT);
-		} else {
-			outStream = byteOut;
-		}
+		Cursor cursor = application.getContentResolver().query(Uri.parse(PROVIDER_PROTOCOL + scriptUri), 
+				new String[] { encode ? "scriptSourceEncoded" : "scriptSource" }, 
+				DebugContentProvider.ORIGNAL_SELECTION, 
+				null, 
+				null);
 		
 		String resourceContent=null;
-		try {
-			byte bytesRead[] = new byte[4096];
-			int numBytes=0;
-			
-			//Read File Line By Line
-			while ((numBytes = inputStream.read(bytesRead)) > 0)   {
-				outStream.write(bytesRead,0,numBytes);
+		if (cursor != null) {
+			if (cursor.moveToFirst()) {
+				resourceContent = cursor.getString(0);
 			}
-		} finally {
-			resourceContent = byteOut.toString();
-			
-			inputStream.close();
-			outStream.close();
+			cursor.close();
 		}
 		
-		Log.d(TAG, "loadScriptResourceById - length: " + resourceContent.length());
+		Log.d(TAG, "loadScriptResourceById - length: " + (resourceContent != null ? resourceContent.length() : 0));
 		
 		return resourceContent;
 	}
-	
-	/**
-	 * Open file resource as stream.
-	 *
-	 * @param url the file url
-	 * @return the buffered input stream
-	 * @throws IOException Signals that an I/O exception has occurred.
-	 */
-	protected BufferedInputStream openInputFile(String url) throws IOException {
 
-		BufferedInputStream resource = null;
-        if (url.startsWith(ANDROID_ASSET_URL)) {
-        	url = url.substring(ANDROID_ASSET_URL.length());
-    		resource = new BufferedInputStream(application.getAssets().open(url,AssetManager.ACCESS_STREAMING));
-
-        } else if (url.indexOf(":") < 0) {
-    		resource = new BufferedInputStream(application.getAssets().open(url,AssetManager.ACCESS_STREAMING));
-
-        } else {
-    		resource = new BufferedInputStream(new URL(url).openStream());
-        }
-		return resource;
+	public String getSessionId() {
+		return sessionId;
 	}
-
-
 }

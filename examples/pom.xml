@@ -21,7 +21,7 @@
 	<parent>
 		<groupId>org.jshybugger</groupId>
 		<artifactId>jshybugger-parent</artifactId>
-		<version>1.1.1</version>
+		<version>1.2.0_r1</version>
 	</parent>
 
 	<artifactId>jshybugger-examples</artifactId>
@@ -29,7 +29,7 @@
 	<name>jsHybugger - Examples</name>
 
 	<modules>
-		<!-- module>phonegap</module -->
+		<module>phonegap</module>
 		<module>webview</module>
 	</modules>
 	

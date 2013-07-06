@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.mozilla.javascript.EvaluatorException;
@@ -36,22 +37,24 @@ import android.util.Log;
  */
 public class JsCodeLoader {
 
+	/** The Constant INSTRUMENT_STACKSIZE defines the default thread stacksize for code instrumentation . */
+	public static final String INSTRUMENT_STACKSIZE = "instrumentStacksize";
 	
 	/** The Constant PARSER_THREAD_STACKSIZE. */
-	private static final int PARSER_THREAD_STACKSIZE = 32000;
+	public static final int DEFAULT_INSTRUMENT_STACKSIZE = 32000;
 	
 	/** The Constant TAG. */
 	private static final String TAG = "JsCodeLoader";
 
 	/**
 	 * Instrument javascript file.
-	 *
-	 * @param inputFile the input file
 	 * @param scriptUri the script uri
+	 * @param inputFile the input file
 	 * @param outputStream the output stream
+	 * @param properties instrumentation properties
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	public synchronized static void instrumentFile(final InputStream inputFile, final String scriptUri, final OutputStream outputStream) throws Exception  {
+	public synchronized static void instrumentFile(final String scriptUri, final InputStream inputFile, final OutputStream outputStream, Map<String, Object> properties) throws Exception  {
 	
 		final InputStreamReader inputStreamReader = new InputStreamReader(inputFile);
 		try {
@@ -79,6 +82,15 @@ public class JsCodeLoader {
 							writer.close();
 							
 						} catch (EvaluatorException e) {
+							BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream));
+							try {
+								writer.write("JsHybugger.loadFile('" + scriptUri + "',0)");
+								writer.close();
+							} catch (IOException e1) {
+								parseExceptions.add(e1);
+								return;
+							}
+							
 							parseExceptions.add(e);
 						} catch (IOException e) {
 							parseExceptions.add(e);
@@ -87,7 +99,7 @@ public class JsCodeLoader {
 						}
 					}
 				}
-			,"ParserThread", PARSER_THREAD_STACKSIZE);
+			,"ParserThread", (Integer)getPropertyValue(properties, INSTRUMENT_STACKSIZE, DEFAULT_INSTRUMENT_STACKSIZE));
 			
 			thread.start();
 			Log.i(TAG, "Waiting for instrumentation: " + scriptUri);
@@ -107,4 +119,20 @@ public class JsCodeLoader {
 		}
 	}
 
+	/**
+	 * Gets the property value.
+	 *
+	 * @param properties the properties map
+	 * @param propName the prop name
+	 * @param defaultValue the default value
+	 * @return the property value
+	 */
+	private static Object getPropertyValue(Map<String, Object> properties, String propName, Object defaultValue) {
+		
+		if (properties != null && properties.get(propName) != null) {
+			return  properties.get(propName);
+		} else {
+			return defaultValue;
+		}
+	}
 }

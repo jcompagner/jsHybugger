@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1" android:versionName="1.1.0-SNAPSHOT" package="org.jshybugger.example.webview">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1" android:versionName="1.2.0_r1" package="org.jshybugger.example.webview">
 
-    <!-- JsHybugger needs network access -->
+    <!-- jsHybugger needs network access -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <uses-sdk android:minSdkVersion="9" android:targetSdkVersion="16"/>
@@ -15,11 +15,24 @@
             </intent-filter>
         </activity>
         
-        <!--  JSHybugger webview content provider -->
-    	<provider android:authorities="jsHybugger.org" android:exported="false" android:name="org.jshybugger.DebugContentProvider"/>
+        <!--  jsHybugger content provider -->
+    	<provider android:authorities="jsHybugger.org" android:exported="false" android:name="org.jshybugger.DebugContentProvider">
+    	    
+    	    <!-- if a StackOverflowError occurs during file instrumentation increase this value - default 32000 bytes  -->
+    	    <meta-data android:name="instrumentStacksize" android:value="32000"/>
+    	    
+    	    <!-- regular expression for filenames which are not instrumented -->
+    	    <meta-data android:name="excludePattern" android:value="(\\.min\\.js|cordova.js)"/>
+    	    
+    	</provider>
     	
-        <!--  JSHybugger debug service -->
-    	<service android:enabled="true" android:exported="false" android:name="org.jshybugger.DebugService"/>
+        <!--  jsHybugger debug service -->
+    	<service android:enabled="true" android:exported="false" android:name="org.jshybugger.DebugService">
+    	    
+    	    <!-- debug listen port - default 8888 -->
+    	    <meta-data android:name="debugPort" android:value="8888"/>
+    	    <meta-data android:name="domainSocketName" android:value="jsHybugger"/>
+    	</service>	    
             		        
     </application>
 

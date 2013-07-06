@@ -18,7 +18,6 @@ package org.jshybugger.server;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -65,6 +64,10 @@ public class ConsoleMsgHandler extends AbstractMsgHandler {
 			conn.send(reply.toString());
 			
 			pushStoredMessages(conn);
+			
+		} else if ("addInspectedNode".equals(method)) {
+			sendAckMessage(conn, message);
+			
 		} else {
 			super.onReceiveMessage(conn, method, message);
 		}

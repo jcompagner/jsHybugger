@@ -19,9 +19,11 @@ import org.jshybugger.DebugService.LocalDebugService;
 
 import android.app.Activity;
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.net.Uri;
 import android.os.IBinder;
 import android.util.Log;
 import android.webkit.WebView;
@@ -91,9 +93,45 @@ public class DebugServiceClient {
 	 * @param webView the web view to attach
 	 * @param activity the activity for this webview
 	 */
-	public static void attachWebView(WebView webView, Activity activity) {
+	public static DebugServiceClient attachWebView(WebView webView, Activity activity) {
 		
-		new DebugServiceClient(webView, activity).startService();
+		DebugServiceClient client = new DebugServiceClient(webView, activity);
+		client.startService();
 		webView.addJavascriptInterface(JSDInterface.getJSDInterface(), "JsHybuggerNI");
+		
+		return client;
+	}
+	
+	/**
+	 * This method prepares JS code for debugging and returns an unique URI identifier for 
+	 * loading via <script> tag.
+	 * @param jsCode the js code to instrument
+	 * @param resourceName the resource identifier, if null an uri name will be generated automatically.
+	 *
+	 * @return the uri for the resource
+	 */
+	public String processJSCode(String jsCode, String resourceName) {
+		ContentValues values = new ContentValues();
+		values.put("scriptSource", jsCode);
+		
+		Uri uri = Uri.parse(DebugContentProvider.getProviderProtocol(getContext()));
+		
+		uri = getContext().getContentResolver().insert(uri, values);
+		
+		return uri.toString();
+	}
+	
+	/**
+	 * Gets the jsHybugger script URL.
+	 *
+	 * @return the jsHybugger script URL
+	 */
+	public String getJsHybuggerURL() {
+		
+		return DebugContentProvider.getProviderProtocol(getContext()) + "jshybugger.js";
+	}
+	
+	private Context getContext() {
+		return activity.getApplicationContext();
 	}
 }

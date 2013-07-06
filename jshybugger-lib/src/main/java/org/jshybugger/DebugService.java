@@ -26,9 +26,14 @@ import org.jshybugger.server.DebugSession;
 
 import android.app.Activity;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.ServiceInfo;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
@@ -70,14 +75,28 @@ public class DebugService extends Service {
 	@Override
 	public void onCreate() {
 		try {
-			DebugServer debugServer = new DebugServer( 8888 );
+			int debugPort = 8888;
+			String domainSocketName = "jsHybugger.";
+			
+			ServiceInfo info = getApplicationContext().getPackageManager().getServiceInfo(new ComponentName(getApplicationContext(), DebugService.class), PackageManager.GET_SERVICES|PackageManager.GET_META_DATA);
+			Bundle metaData = info.metaData;
+			if (metaData != null) {
+				if (metaData.getInt("debugPort", 0) > 0) {
+					debugPort = metaData.getInt("debugPort");
+				} 
+				domainSocketName = metaData.getString("domainSocketName") + "."; // fix because GUI truncates last character
+			}			
+			
+			DebugServer debugServer = new DebugServer( debugPort, domainSocketName );
 			debugSession = new DebugSession(this);
 			
 			debugServer.exportSession(debugSession);
 		} catch (UnknownHostException e) {
-			Log.d(TAG, "onCreate() failed", e);
+			Log.e(TAG, "DebugService creation failed: " + e.getMessage());
 		} catch (InterruptedException e) {
-			Log.d(TAG, "onCreate() failed", e);
+			Log.e(TAG, "DebugService creation failed: " + e.getMessage());
+		} catch (NameNotFoundException e) {
+			Log.e(TAG, "DebugService creation failed: " + e.getMessage());
 		}
 	}
 	
@@ -111,7 +130,7 @@ public class DebugService extends Service {
 		
 		//Log.d(TAG, "onStartCommand: " + intent);
 		extractCallbackHandler(intent);
-		return START_STICKY;
+		return Service.START_NOT_STICKY;
 	}
 	
 	/**
