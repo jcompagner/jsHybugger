@@ -19,9 +19,6 @@ function deviceready() {
     $('#clear').click(clear);
     
     db = window.openDatabase('mydb', '1.0', 'Test DB', 50 * 1024 * 1024);
-    if (JsHybugger) {
-    	JsHybugger.addWebSQLDatabaseInfo(db,'mydb', '1.0','Test DB');
-    }
     db.transaction(function(tx) {
         tx.executeSql("CREATE TABLE IF NOT EXISTS " +
                       "todo(ID INTEGER PRIMARY KEY ASC, todo TEXT, added_on DATETIME)", []);

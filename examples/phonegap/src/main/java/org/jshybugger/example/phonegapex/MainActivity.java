@@ -1,12 +1,13 @@
 package org.jshybugger.example.phonegapex;
 
+import org.apache.cordova.Config;
 import org.apache.cordova.CordovaChromeClient;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
+import org.jshybugger.DebugServiceClient;
 
 import android.os.Bundle;
-import org.jshybugger.DebugServiceClient;
 
 public class MainActivity extends DroidGap {
 
@@ -16,9 +17,8 @@ public class MainActivity extends DroidGap {
 		super.onCreate(savedInstanceState);
 		
 		// load html page via JsHybugger content provider 
-		// example for local page loading	
-		super.loadUrl("content://jsHybugger.org/file:///android_asset/www/index.html");
-		//super.loadUrl("content://jsHybugger.org/http://jshybugger.org/angular-phonecat/app/index.html");
+        // Set by <content src="index.html" /> in config.xml
+        super.loadUrl(Config.getStartUrl());
 	}
 
 	@Override
