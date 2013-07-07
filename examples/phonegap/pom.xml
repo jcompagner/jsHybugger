@@ -21,7 +21,7 @@
 	<parent>
 		<groupId>org.jshybugger</groupId>
 		<artifactId>jshybugger-examples</artifactId>
-		<version>1.2.0_r1</version>
+		<version>1.2.0</version>
 	</parent>
 
 	<artifactId>jshybugger-phonegap-ex</artifactId>
