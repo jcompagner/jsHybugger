@@ -59,15 +59,29 @@ public class MainActivity extends Activity {
 		// example for local page loading	
 		webView.loadUrl("content://jsHybugger.org/file:///android_asset/www/index.html");
 
-		/* example for loadDataWithBaseURL
-		String resUri = dbgClient.processJSCode("function hello() {\nvar x=0;\nalert('hello world');\n}", null);
+		// example for dynamic page loading	
+		// loadDataWithBaseURL(dbgClient);
+	}
 
-		final String htmlPre = "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"> <script src='" + dbgClient.getJsHybuggerURL() + "'></script> <script src='" + resUri + "'></script></head><body style='margin:0; pading:0; background-color: black;'>";  
-        final String htmlCode = "<button onclick='hello()'>hello world</button>";
-        final String htmlPost = "</body></html>";
-        
-        webView.loadDataWithBaseURL("null", htmlPre+htmlCode+htmlPost, "text/html", "UTF-8", null);
-        */
+	private void loadDataWithBaseURL(DebugServiceClient dbgClient) {
+		// argument one: valid javascript fragment
+		// argument two: resource name or null (will generate a name based on the file content - MD5 hash) 
+		String helloWorldUri = dbgClient.processJSCode("function helloWorld() {\nalert('hello world');\n}", null);
+
+		StringBuilder htmlContent = new StringBuilder();
+		htmlContent.append("<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\">");
+
+		// Important: enable jsHybugger debugging for this page
+		htmlContent.append("<script src='" + dbgClient.getJsHybuggerURL() + "'></script>");
+
+		// add on-the-fly generated helloWorld.js resource to this page
+		htmlContent.append("<script src='" + helloWorldUri + "'></script>");
+
+		htmlContent.append("</head><body>");  
+		htmlContent.append("<button onclick='hello()'>hello world</button>");
+		htmlContent.append("</body></html>");
+
+		webView.loadDataWithBaseURL("null", htmlContent.toString(), "text/html", "UTF-8", null);
 	}
 
 	@Override
