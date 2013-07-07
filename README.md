@@ -21,7 +21,7 @@ jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.
 * remote console logging
 * javascript syntax and runtime error reporting 
  
-[Download JAR library 1.1.1](http://jshybugger.org/download/jshybugger-bundle-1.1.1.jar)
+[Download JAR library 1.2.0](http://jshybugger.org/download/jshybugger-bundle-1.2.0.jar)
 
 
 # jsHybugger Debugger App
@@ -35,7 +35,7 @@ jsHybugger will intercept all resource requests for your web page, and will do a
 javascript and html files. Javascript files, with the extension ".min.js" will not be instrumented and therefor not debug-able. If you use the non minified version of large libraries i.e. jquery, it's important to start the app on the FIRST run (with jsHybugger) NOT in debug mode. The instrumentation will take some time (jquery about 10sec.), the instrumented files are stored in a cache and are used at next startup. File changes are detected automatically and will trigger an re-instrumentation of the file. jsHybugger will automatically starts a WebSocket-Server on port 8888 on your device. You can use Eclipse together with the [Chrome-DevTools for Java](http://code.google.com/p/chromedevtools/) or you can use the "Chrome Browser" on your notebook/desktop to access the debugging service on your smartphone.
 
 [Install Debugger App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) or 
-[Download Debugger App](http://jshybugger.org/download/jshybugger-proxy-1.1.1.apk) 
+[Download Debugger App](http://jshybugger.org/download/jshybugger-proxy-1.2.0.apk) 
 
 # jsHybugger pictures and videos 
 
@@ -69,7 +69,7 @@ You should now see the chrome webinspector and your loaded javascripts. Let's se
 
 # Integrate jsHybugger into your app
 
-1.  Add jshybugger-bundle/target/jshybugger-bundle-1.0.2.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.0.2.jar)) file to your libs directory
+1.  Add jshybugger-bundle/target/jshybugger-bundle-1.2.0.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.2.0.jar)) file to your libs directory
 
 2.	enhance AndroidManifest.xml
 
@@ -102,8 +102,4 @@ Maven Build
 
 1. Make sure that the ANDROID_HOME environment variable is set and refers to your SDK installation.
 
-2. For the PhoneGap example you must first download and install the cordova library to your local maven repository.
-
-	mvn install:install-file -DgroupId=org.apache.cordova -DartifactId=cordova -Dversion=2.2.0 -Dfile=<path to downloaded cordova-2.2.0.jar file> -Dpackaging=jar
-
-3. Build the complete system with the following command: mvn clean install 
+2. Build the complete system with the following command: mvn clean install 
