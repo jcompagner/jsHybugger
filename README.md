@@ -5,7 +5,7 @@ Maybe you already know how easy it is to debug web pages on your Android device 
 
 jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.google.com/chrome-developer-tools/docs/debugger-protocol) as an android service. You can easily integrate the service component into your existing Android App to enable javascript debugging for webview components (you can also debug PhoneGap apps) or you can use the [jsHybugger Debugging App](https://play.google.com/store/apps/details?id=org.jshybugger.proxy) (available over google play store or as [APK](http://jshybugger.org/download/jshybugger-proxy-1.1.1.apk)) to debug web pages which runs in the default android browser.
 
-# JsHybugger 1.2 Features 
+# jsHybugger 1.2 Features 
 
 * View/Edit/Delete Local Storage 
 * View/Edit/Delete Session Storage
@@ -78,12 +78,12 @@ You should now see the chrome webinspector and your loaded javascripts. Let's se
 		<!-- JsHybugger needs network access -->
 		<uses-permission android:name="android.permission.INTERNET" />
 
-		<!--  JSHybugger webview content provider -->
+		<!--  jsHybugger webview content provider -->
 		<provider android:name="org.jshybugger.DebugContentProvider"
 				  android:exported="false"
 				  android:authorities="jsHybugger.org" />
 		  
-		<!--  JSHybugger debug service -->
+		<!--  jsHybugger debug service -->
 		<service android:name="org.jshybugger.DebugService"
 				 android:exported="false"
 				 android:enabled="true"/>
