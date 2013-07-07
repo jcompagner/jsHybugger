@@ -77,6 +77,9 @@ public class DebugContentProvider extends ContentProvider {
 	public static final String ORIGNAL_SELECTION = "original";
 	public static final String IS_CACHED_SELECTION = "isCached";
 
+	public static final String CACHE_DIR = ".jsHybugger";
+	public static final String CHANGED_CACHE_DIR = ".changed";
+
 	private static final String FILE_HASH_PREFIX = ".hash";
 	
 	/** The Constant TAG. */
@@ -96,8 +99,8 @@ public class DebugContentProvider extends ContentProvider {
 	/** The debug service msg handler. */
 	private DebugServiceMsgHandler debugServiceMsgHandler = new DebugServiceMsgHandler(debugServiceStarted);
 	
-	private File CACHE_DIR = null;
-	private File CHANGED_CACHE_DIR=null;
+	private File cache_dir = null;
+	private File changed_cache_dir=null;
 	
 	private Map<String,Object> providerProperties = new HashMap<String,Object>();
 
@@ -223,7 +226,7 @@ public class DebugContentProvider extends ContentProvider {
     }
 
 	private boolean isChangedCacheFile(File cacheFile) {
-		return cacheFile.getAbsolutePath().startsWith(CHANGED_CACHE_DIR.getAbsolutePath());
+		return cacheFile.getAbsolutePath().startsWith(changed_cache_dir.getAbsolutePath());
 	}
 
 	private void writeCacheFile(InputResource resource, String resourceHash,
@@ -277,11 +280,11 @@ public class DebugContentProvider extends ContentProvider {
 
 	private File searchCacheFile(String url) {
 		String loadUrl = getCacheItemName(url);
-		File loadUrlFd = new File(CHANGED_CACHE_DIR, loadUrl);
+		File loadUrlFd = new File(changed_cache_dir, loadUrl);
 		if (loadUrlFd.exists()) {
 			return loadUrlFd;
 		}
-		loadUrlFd = new File(CACHE_DIR, loadUrl);
+		loadUrlFd = new File(cache_dir, loadUrl);
 		return loadUrlFd;
 	}
 	
@@ -292,17 +295,17 @@ public class DebugContentProvider extends ContentProvider {
 	}
 
 	private void prepareCache() {
-		CACHE_DIR = new File(getContext().getFilesDir(), ".jsHybugger");
-		if (!CACHE_DIR.exists() && !CACHE_DIR.mkdir()) {
-			Log.e(TAG, "Creating jsHybugger cache failed. "  + CACHE_DIR.getAbsolutePath());
+		cache_dir = new File(getContext().getFilesDir(), CACHE_DIR);
+		if (!cache_dir.exists() && !cache_dir.mkdir()) {
+			Log.e(TAG, "Creating jsHybugger cache failed. "  + cache_dir.getAbsolutePath());
 		}
-		CHANGED_CACHE_DIR = new File(CACHE_DIR, ".changed");
-		if (!CHANGED_CACHE_DIR.exists() && !CHANGED_CACHE_DIR.mkdir()) {
-			Log.e(TAG, "Creating jsHybugger changed cache failed. "  + CHANGED_CACHE_DIR.getAbsolutePath());
+		changed_cache_dir = new File(cache_dir, CHANGED_CACHE_DIR);
+		if (!changed_cache_dir.exists() && !changed_cache_dir.mkdir()) {
+			Log.e(TAG, "Creating jsHybugger changed cache failed. "  + changed_cache_dir.getAbsolutePath());
 		}
 		
 		// clear all files in changed cache
-		for (File file : CHANGED_CACHE_DIR.listFiles()) {
+		for (File file : changed_cache_dir.listFiles()) {
 			file.delete();
 		}
 	}
@@ -445,8 +448,23 @@ public class DebugContentProvider extends ContentProvider {
 	 * @see android.content.ContentProvider#delete(android.net.Uri, java.lang.String, java.lang.String[])
 	 */
 	@Override
-	public int delete(Uri arg0, String arg1, String[] arg2) {
-		throw new UnsupportedOperationException("Not supported by this provider");
+	public int delete(Uri uri, String selection, String[] selectionArgs) {
+		int numFiles=0;
+		
+		// clear all files in cache
+		for (File file : cache_dir.listFiles()) {
+			if (!file.getName().equals(CHANGED_CACHE_DIR)) {
+				file.delete();
+				numFiles++;
+			}
+		}
+		// clear all files in changed cache
+		for (File file : changed_cache_dir.listFiles()) {
+			file.delete();
+			numFiles++;
+		}
+		
+		return numFiles;
 	}
 
 	/* (non-Javadoc)
@@ -462,7 +480,7 @@ public class DebugContentProvider extends ContentProvider {
 	 */
 	@Override
 	public Uri insert(Uri uri, ContentValues content) {
-		return saveContent(uri, content.getAsString("scriptSource"), CACHE_DIR);
+		return saveContent(uri, content.getAsString("scriptSource"), cache_dir);
 	}
 	
 	private Uri saveContent(Uri uri, String scriptSource, File cache) {
@@ -486,7 +504,7 @@ public class DebugContentProvider extends ContentProvider {
 
 			if (!cacheFile.exists() || !isCacheFileValid(resourceHash, cacheFile)) {
 
-				deleteCacheFile(CHANGED_CACHE_DIR, uri.getPath().substring(1));
+				deleteCacheFile(changed_cache_dir, uri.getPath().substring(1));
 				writeCacheFile(resource, resourceHash, cacheFile);
 			
 				// instrument js code
@@ -607,7 +625,7 @@ public class DebugContentProvider extends ContentProvider {
 	 */
 	@Override
 	public int update(Uri uri, ContentValues content, String arg2, String[] arg3) {
-		Uri rUri = saveContent(uri, content.getAsString("scriptSource"), CHANGED_CACHE_DIR);
+		Uri rUri = saveContent(uri, content.getAsString("scriptSource"), changed_cache_dir);
 		return rUri != null ? 1 : 0;
 	}
 
