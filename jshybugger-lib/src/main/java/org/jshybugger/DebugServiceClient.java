@@ -15,6 +15,10 @@
  */
 package org.jshybugger;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.jshybugger.DebugService.LocalDebugService;
 
 import android.app.Activity;
@@ -24,6 +28,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.Uri;
+import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 import android.webkit.WebView;
@@ -97,6 +102,76 @@ public class DebugServiceClient {
 		
 		DebugServiceClient client = new DebugServiceClient(webView, activity);
 		client.startService();
+
+		// nativeRegisterURLSchemeAsLocal () will only work if setAllowUniversalAccessFromFileURLs is true
+		if (Build.VERSION.SDK_INT >= 16) {  
+		    Method method;
+			try {
+				method = webView.getSettings().getClass().getMethod("setAllowUniversalAccessFromFileURLs", boolean.class);
+			    if (method != null) {
+			        method.invoke(webView.getSettings(), true);
+			    }
+			} catch (NoSuchMethodException e) {
+				//Log.d(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
+			} catch (IllegalArgumentException e) {
+				//Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
+			} catch (IllegalAccessException e) {
+				//Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
+			} catch (InvocationTargetException e) {
+				//Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
+			}
+		}	
+		
+		try {
+			// register the content:// protcol as local schema to fix Cross-Origin security problems
+			try {
+				Method method = webView.getClass().getMethod("getWebViewProvider");
+			    if (method != null) {
+			        Object provider = method.invoke(webView);
+			        
+			        method = provider != null ? provider.getClass().getMethod("getWebViewCore") : null;
+				    if (method != null) {
+				    	Object webViewCore = method.invoke(provider);
+			        
+				    	method = webViewCore != null ? webViewCore.getClass().getDeclaredMethod("nativeRegisterURLSchemeAsLocal", int.class, String.class) : null;
+					    if (method != null) {
+					    	Field field = webViewCore.getClass().getDeclaredField("mNativeClass");
+					    	
+					    	if (field != null) {
+					    		field.setAccessible(true);
+			        
+					    		method.setAccessible(true);
+					    		method.invoke(webViewCore, field.get(webViewCore), "content");
+					    	}
+					    }
+				    }
+			    }
+			} catch (NoSuchMethodException e) {
+				// fall back for older android systems
+				Object webViewCore = null;
+				Field field = WebView.class.getDeclaredField("mWebViewCore");
+	    		field.setAccessible(true);
+	    		webViewCore = field.get(webView);
+
+	    		Method method = webViewCore != null ? webViewCore.getClass().getDeclaredMethod("nativeRegisterURLSchemeAsLocal", String.class) : null;
+			    if (method != null) {
+		    		method.setAccessible(true);
+		    		method.invoke(webViewCore, "content");
+			    }
+			}
+		} catch (NoSuchMethodException e) {
+			Log.w(TAG, "nativeRegisterURLSchemeAsLocal() for webview failed. " + e);
+		} catch (IllegalArgumentException e) {
+			Log.w(TAG, "nativeRegisterURLSchemeAsLocal() for webview failed. " + e);
+		} catch (IllegalAccessException e) {
+			Log.w(TAG, "nativeRegisterURLSchemeAsLocal() for webview failed. " + e);
+		} catch (InvocationTargetException e) {
+			Log.w(TAG, "nativeRegisterURLSchemeAsLocal() for webview failed. " + e);
+		} catch (NoSuchFieldException e) {
+			Log.w(TAG, "nativeRegisterURLSchemeAsLocal() for webview failed. " + e);
+		}
+
+		
 		webView.addJavascriptInterface(JSDInterface.getJSDInterface(), "JsHybuggerNI");
 		
 		return client;

@@ -15,6 +15,7 @@
  */
 package org.jshybugger;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.UnknownHostException;
@@ -164,23 +165,6 @@ public class DebugService extends Service {
 		
 		debugSession.setBrowserInterface(browserInterface);
 		
-		if (Build.VERSION.SDK_INT >= 16) {  
-		    Method method;
-			try {
-				method = WebView.class.getMethod("setAllowUniversalAccessFromFileURLs", boolean.class);
-			    if (method != null) {
-			        method.invoke(webView.getSettings(), true);
-			    }
-			} catch (NoSuchMethodException e) {
-				//Log.d(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
-			} catch (IllegalArgumentException e) {
-				//Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
-			} catch (IllegalAccessException e) {
-				//Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
-			} catch (InvocationTargetException e) {
-				//Log.e(TAG, "setAllowUniversalAccessFromFileURLs() for webview failed", e);
-			}
-		}		
 		notifyHandlers(Message.obtain(null, MSG_WEBVIEW_ATTACHED));
 	}
 	
