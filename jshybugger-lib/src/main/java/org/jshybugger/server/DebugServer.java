@@ -15,7 +15,7 @@
  */
 package org.jshybugger.server;
 
-import java.net.UnknownHostException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -47,11 +47,11 @@ public class DebugServer {
 	 * Instantiates a new debug server.
 	 *
 	 * @param debugPort the tcp listen port number
-	 * @param domainSocketName TODO
+	 * @param domainSocketName name of domain socket
 	 * @param application the application context
-	 * @throws UnknownHostException the unknown host exception
+	 * @throws IOException 
 	 */
-	public DebugServer(final int debugPort, final String domainSocketName) throws UnknownHostException {
+	public DebugServer(final int debugPort, final String domainSocketName) throws IOException {
 		
 		Thread webServerThread = new Thread(new Runnable() {
 
@@ -123,9 +123,10 @@ public class DebugServer {
 		        debugServerStarted.countDown();
 			}
 		});
-		webServerThread.start();
 		
 		domainSocketServer = new DomainSocketServer(domainSocketName, debugPort);
+
+		webServerThread.start();
 		domainSocketServer.start();
 	}
 
@@ -141,7 +142,11 @@ public class DebugServer {
 	}
 
 	public void stop() {
-		webServer.stop();
-		domainSocketServer.interrupt();
+		if (webServer != null) {
+			webServer.stop();
+		}
+		if (domainSocketServer != null) {
+			domainSocketServer.stopSocketServer();
+		}
 	}
 }

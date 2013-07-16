@@ -15,9 +15,7 @@
  */
 package org.jshybugger;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +31,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ServiceInfo;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Message;
@@ -94,10 +91,16 @@ public class DebugService extends Service {
 			debugServer.exportSession(debugSession);
 		} catch (UnknownHostException e) {
 			Log.e(TAG, "DebugService creation failed: " + e.getMessage());
+			stopSelf();
 		} catch (InterruptedException e) {
 			Log.e(TAG, "DebugService creation failed: " + e.getMessage());
+			stopSelf();
 		} catch (NameNotFoundException e) {
 			Log.e(TAG, "DebugService creation failed: " + e.getMessage());
+			stopSelf();
+		} catch (IOException e) {
+			Log.e(TAG, "DebugService creation failed: " + e.getMessage());
+			stopSelf();
 		}
 	}
 	

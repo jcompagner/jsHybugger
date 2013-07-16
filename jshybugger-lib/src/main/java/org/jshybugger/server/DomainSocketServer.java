@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
+import android.net.LocalSocketAddress;
 import android.util.Log;
 
 
@@ -31,17 +32,21 @@ public class DomainSocketServer extends Thread {
 
 	private LocalServerSocket serverSocket;
 
-	private String domainSocketName;
+	private int forwarPort;
 
-	private int forwarPort; 
+	private String domainSocketName; 
  
     /**
      * Instantiates a new domain socket server.
      * @param domainSocketName Name of the domain socket
+     * @throws IOException 
      */
-    public DomainSocketServer(String domainSocketName, int forwarPort) {
+    public DomainSocketServer(String domainSocketName, int forwarPort) throws IOException {
     	this.forwarPort = forwarPort;
     	this.domainSocketName = (domainSocketName != null ? domainSocketName : "jshybugger") + "_devtools_remote";
+
+    	this.serverSocket = new LocalServerSocket(this.domainSocketName);			
+		this.threadPool = Executors.newCachedThreadPool();
     }
     
     /**
@@ -50,12 +55,12 @@ public class DomainSocketServer extends Thread {
     public void run() {
 		
 		try {
-			serverSocket = new LocalServerSocket(domainSocketName);			
-			threadPool = Executors.newCachedThreadPool();
 
 			while (!isInterrupted()) { 
 	            LocalSocket clientSocket = serverSocket.accept();
-	            threadPool.execute(new ClientProcessor(clientSocket)); 
+	            if (!isInterrupted()) {
+	            	threadPool.execute(new ClientProcessor(clientSocket));
+	            }
 	        } 
 			
 		} catch (IOException e) {
@@ -64,13 +69,30 @@ public class DomainSocketServer extends Thread {
 			}
 		} finally {
 			try {
-				serverSocket.close();
-				threadPool.shutdownNow();
+				if (serverSocket != null) {
+					serverSocket.close();
+				}
+				if (threadPool != null) {
+					threadPool.shutdownNow();
+				}
 				Log.i(TAG, "socket listener stopped");
 			} catch (IOException e) {
 			}
 		}
     } 
+    
+	public void stopSocketServer() {
+		if (serverSocket != null) {
+			try {
+				interrupt();
+				LocalSocket ls = new LocalSocket();
+				ls.connect(serverSocket.getLocalSocketAddress());
+				ls.close();
+			} catch (IOException e) {
+				Log.e(TAG, "stopSocketServer failed", e);
+			}
+		}
+	}
     
     /**
      * The Class ClientProcessor is responsible for starting forwarding between 
@@ -219,4 +241,5 @@ public class DomainSocketServer extends Thread {
             mParent.connectionBroken(); 
         } 
     }
+
 }
