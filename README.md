@@ -29,7 +29,7 @@ jsHybugger implements the [Chrome Remote Debugging Protocol](https://developers.
 * save javascript changes
 * on-the-fly javascript instrumentation
  
-[Download JAR library 1.2.1](http://jshybugger.org/download/jshybugger-bundle-1.2.1.jar)
+[Download JAR library 1.2.2](http://jshybugger.org/download/jshybugger-bundle-1.2.2.jar)
 
 
 # jsHybugger Debugger App
@@ -77,7 +77,7 @@ You should now see the chrome webinspector and your loaded javascripts. Let's se
 
 # Integrate jsHybugger into your app
 
-1.  Add jshybugger-bundle/target/jshybugger-bundle-1.2.1.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.2.1.jar)) file to your libs directory
+1.  Add jshybugger-bundle/target/jshybugger-bundle-1.2.2.jar ([download](http://jshybugger.org/download/jshybugger-bundle-1.2.2.jar)) file to your libs directory
 
 2.	enhance AndroidManifest.xml
 
