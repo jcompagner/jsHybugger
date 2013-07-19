@@ -132,7 +132,11 @@ public class DebugContentProvider extends ContentProvider {
 
 		// wait here till sync debug service is started
 		try {
-			debugServiceStarted.await();
+			if (debugServiceStarted.getCount() > 0) {
+				Log.i(TAG, "Waiting for jsHybugger DebugService");
+				debugServiceStarted.await();
+				Log.i(TAG, "jsHybugger DebugContentProvider synchronized with DebugService");
+			}
 		} catch (InterruptedException e1) {
 			Log.e(TAG, "Waiting for debug service interrupted");
 		}
@@ -152,8 +156,21 @@ public class DebugContentProvider extends ContentProvider {
 				return ParcelFileDescriptor.open(cacheFile, ParcelFileDescriptor.MODE_READ_ONLY);
 			}
 			
-			resource = openInputFile(url);
-
+			try {
+				resource = openInputFile(url);
+			} catch (FileNotFoundException fex) {
+				// happens only for on the fly instrumented resources - only a cache version exists
+				if (cacheFile.exists()) {
+					File instrumentedFile = searchCacheFile(url + INSTRUMENTED_FILE_APPENDIX);
+					if (instrumentedFile.exists()) {
+						return ParcelFileDescriptor.open(instrumentedFile, ParcelFileDescriptor.MODE_READ_ONLY);
+					}
+					return ParcelFileDescriptor.open(cacheFile, ParcelFileDescriptor.MODE_READ_ONLY);
+				} else {
+					throw fex;
+				}
+			}
+			
 			if (resource.isJs()) { 
 				
 				String resourceHash = calcResourceHash(resource);

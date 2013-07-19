@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
 		webView.loadUrl("content://jsHybugger.org/file:///android_asset/www/index.html");
 
 		// example for dynamic page loading	
-		// loadDataWithBaseURL(dbgClient);
+		//loadDataWithBaseURL(dbgClient);
 	}
 
 	private void loadDataWithBaseURL(DebugServiceClient dbgClient) {
@@ -78,7 +78,7 @@ public class MainActivity extends Activity {
 		htmlContent.append("<script src='" + helloWorldUri + "'></script>");
 
 		htmlContent.append("</head><body>");  
-		htmlContent.append("<button onclick='hello()'>hello world</button>");
+		htmlContent.append("<button onclick='helloWorld()'>hello world</button>");
 		htmlContent.append("</body></html>");
 
 		webView.loadDataWithBaseURL("null", htmlContent.toString(), "text/html", "UTF-8", null);

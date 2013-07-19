@@ -189,7 +189,7 @@ public class DebugServiceClient {
 		ContentValues values = new ContentValues();
 		values.put("scriptSource", jsCode);
 		
-		Uri uri = Uri.parse(DebugContentProvider.getProviderProtocol(getContext()));
+		Uri uri = Uri.parse(DebugContentProvider.getProviderProtocol(getContext()) + (resourceName != null ? resourceName : ""));
 		
 		uri = getContext().getContentResolver().insert(uri, values);
 		
