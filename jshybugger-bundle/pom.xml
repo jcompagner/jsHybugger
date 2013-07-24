@@ -46,9 +46,9 @@
 					<appendAssemblyId>false</appendAssemblyId>
 					<classifier>bundle</classifier>
 					<finalName>${project.build.finalName}_bundle</finalName>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
+					<descriptors>
+						<descriptor>assembly.xml</descriptor>
+					</descriptors>
 				</configuration>
 				<executions>
 					<execution>
