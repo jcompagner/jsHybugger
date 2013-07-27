@@ -54,6 +54,7 @@ import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Messenger;
@@ -88,8 +89,8 @@ public class DebugContentProvider extends ContentProvider {
 	/** The Constant ANDROID_ASSET_URL. */
 	private static final String ANDROID_ASSET_URL = "file:///android_asset/";
 	
-	/** The Constant ANDROID_PRIVATE_URL. */
-	private static final String ANDROID_PRIVATE_URL = "file:///data/data/";
+	/** The Constant ANDROID_FILE_URL. */
+	private static final String ANDROID_FILE_URL = "file://";
 
 	private static final String DEFAULT_PROVIDER_PROTOCOL = "content://jsHybugger.org/";
 
@@ -370,9 +371,9 @@ public class DebugContentProvider extends ContentProvider {
         			url.endsWith(".html"), 
         			new BufferedInputStream(getContext().getAssets().open(url,AssetManager.ACCESS_STREAMING)));
         	
-		} else if (url.contains(ANDROID_PRIVATE_URL)) {   // Must be a private app file
+		} else if (url.contains(ANDROID_FILE_URL)) {   // Must be a private app file
 
-        	url = url.substring(url.indexOf("/data/data/"));  // strip file:// 
+        	url = url.substring(ANDROID_FILE_URL.length());  // strip file:// 
         	
         	return new InputResource(
         			url.endsWith(".js"),
