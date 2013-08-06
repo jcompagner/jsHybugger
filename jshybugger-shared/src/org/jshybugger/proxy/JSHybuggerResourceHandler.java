@@ -49,7 +49,7 @@ class JSHybuggerResourceHandler implements HttpHandler {
 				
 				res.content(buffer);
 				
-			//} else if (uri.endsWith("sendToDebugService")) {
+			} else if (uri.endsWith("sendToDebugService")) {
 									
 				JSONObject jsonReq = new JSONObject(req.body());
 				this.browserInterface.sendToDebugService(jsonReq.getString("arg0"), jsonReq.getString("arg1"));

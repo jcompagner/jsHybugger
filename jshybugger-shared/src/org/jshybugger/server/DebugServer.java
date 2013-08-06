@@ -38,7 +38,6 @@ public class DebugServer {
 
 	private static final String CHROME_DEVTOOLS_FRONTEND = "https://chrome-devtools-frontend.appspot.com/static/30.0.1549.0/devtools.html?ws=%s/devtools/page/%s";
 	private WebServer webServer;
-	private DomainSocketServer domainSocketServer;
 	
 	private CountDownLatch debugServerStarted = new CountDownLatch(1);
 	private List<DebugSession> debugSessions  = new ArrayList<DebugSession>();
@@ -47,11 +46,10 @@ public class DebugServer {
 	 * Instantiates a new debug server.
 	 *
 	 * @param debugPort the tcp listen port number
-	 * @param domainSocketName name of domain socket
 	 * @param application the application context
 	 * @throws IOException 
 	 */
-	public DebugServer(final int debugPort, final String domainSocketName) throws IOException {
+	public DebugServer(final int debugPort) throws IOException {
 		
 		Thread webServerThread = new Thread(new Runnable() {
 
@@ -124,16 +122,10 @@ public class DebugServer {
 			}
 		});
 		
-		domainSocketServer = createDomainSocketServer(domainSocketName, debugPort);
 
 		webServerThread.start();
-		domainSocketServer.start();
 	}
-	
-	protected DomainSocketServer createDomainSocketServer(String domainSocketName, int debugPort) throws IOException
-	{
-		return new SocketServer(domainSocketName, debugPort);
-	}
+
 
 	public void exportSession(DebugSession debugSession) throws InterruptedException {
 		debugServerStarted.await();
@@ -149,9 +141,6 @@ public class DebugServer {
 	public void stop() {
 		if (webServer != null) {
 			webServer.stop();
-		}
-		if (domainSocketServer != null) {
-			domainSocketServer.stopSocketServer();
 		}
 	}
 }

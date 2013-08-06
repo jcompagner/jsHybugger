@@ -4,15 +4,22 @@ import java.io.IOException;
 
 public class AndroidDebugServer extends DebugServer {
 
+	private DomainSocketServer domainSocketServer;
+
 	public AndroidDebugServer(int debugPort, String domainSocketName)
 			throws IOException {
-		super(debugPort, domainSocketName);
+		super(debugPort);
+		
+		domainSocketServer =  new DomainSocketServer(domainSocketName, debugPort);
+		domainSocketServer.start();
 	}
-	
+
 	@Override
-	protected AndroidDomainSocketServer createDomainSocketServer(
-			String domainSocketName, int debugPort) throws IOException {
-		return new AndroidDomainSocketServer(domainSocketName, debugPort);
+	public void stop() {
+		super.stop();
+		if (domainSocketServer != null) {
+			domainSocketServer.stopSocketServer();
+		}
 	}
 
 }
