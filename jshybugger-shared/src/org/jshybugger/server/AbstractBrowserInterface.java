@@ -16,15 +16,14 @@
 package org.jshybugger.server;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 
-import android.util.Log;
-import android.util.SparseArray;
-import android.webkit.JavascriptInterface;
 
 /**
  * This class is the interface between the webview and the debugging service.
@@ -45,7 +44,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	private int replyIdentifier=0;
 	
 	/** The reply receivers. */
-	private SparseArray<ReplyReceiver> replyReceivers = new SparseArray<ReplyReceiver>();
+	private Map<Integer,ReplyReceiver> replyReceivers = new HashMap<Integer,ReplyReceiver>();
 	
 	/** The sync queue mode. */
 	private boolean syncQueueMode = false;
@@ -92,7 +91,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 * @param path the message handler name i.e. "Debugger.sendPaused"
 	 * @param data the JSON data
 	 */
-	@JavascriptInterface
+//	@JavascriptInterface
 	public void sendToDebugService(String path, String data) {
 		
 		//Log.d(TAG, "sendToDebugService: " + data);
@@ -101,7 +100,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 			debugSession.sendMessage(path, msg);
 			
 		} catch (JSONException e) {
-			Log.e(TAG, "sendToServer failed for path: " + path, e);
+//			Log.e(TAG, "sendToServer failed for path: " + path, e);
 		}
 	}
 
@@ -113,7 +112,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 * @param receiver an optional callback receiver
 	 * @throws JSONException some JSON exception occured
 	 */
-	@JavascriptInterface
+//	@JavascriptInterface
 	public void sendMsgToWebView(String command, JSONObject data, ReplyReceiver receiver) throws JSONException {
 		
 		synchronized (messageQueue) {
@@ -141,7 +140,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 * @param replyId the reply id
 	 * @param data the data
 	 */
-	@JavascriptInterface
+//	@JavascriptInterface
 	public void sendReplyToDebugService(int replyId, String data) {
 		
 		//Log.d(TAG, "sendReplyToDebugService: " +data);
@@ -150,7 +149,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 			try {
 				rec.onReply(new JSONObject(data));
 			} catch (JSONException e) {
-				Log.e(TAG, "replyToServer failed for replyId: " + replyId, e);
+//				Log.e(TAG, "replyToServer failed for replyId: " + replyId, e);
 			}
 		}
 		replyReceivers.remove(replyId);
@@ -163,7 +162,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 * @return the queued message
 	 * @throws InterruptedException the interrupted exception
 	 */
-	@JavascriptInterface
+//	@JavascriptInterface
 	public String getQueuedMessage(boolean wait) throws InterruptedException {
 		synchronized (messageQueue) {
 			//Log.d(TAG, "getQueuedMessage");

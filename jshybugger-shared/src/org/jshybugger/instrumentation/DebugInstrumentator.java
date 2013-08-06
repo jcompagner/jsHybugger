@@ -191,7 +191,7 @@ public class DebugInstrumentator implements NodeVisitor {
 	 *
 	 * @param node the node
 	 */
-	private void loadFile(AstRoot node) {
+	protected void loadFile(AstRoot node) {
 		prepareStack(node);
 		((TryStatement)node.getFirstChild()).getTryBlock().addChildToFront(makeExpression(makeFunctionCall("JsHybugger.loadFile", scriptURI, node.getEndLineno())));
 	}
@@ -365,7 +365,7 @@ public class DebugInstrumentator implements NodeVisitor {
 	 * @param args the function args
 	 * @return the function call node
 	 */
-	private FunctionCall makeFunctionCall(String functionName, Object...args) {
+	protected FunctionCall makeFunctionCall(String functionName, Object...args) {
 		FunctionCall call = new FunctionCall();
 		call.setTarget(new Name(0, functionName));
 		

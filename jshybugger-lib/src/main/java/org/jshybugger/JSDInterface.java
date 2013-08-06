@@ -16,8 +16,12 @@
 package org.jshybugger;
 
 import org.jshybugger.server.AbstractBrowserInterface;
+import org.jshybugger.server.ReplyReceiver;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.app.Activity;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
 /**
@@ -96,4 +100,31 @@ public class JSDInterface extends AbstractBrowserInterface {
         };
         activity.runOnUiThread(runnable);
 	}
+	
+	@Override
+	@JavascriptInterface
+	public void sendMsgToWebView(String command, JSONObject data,
+			ReplyReceiver receiver) throws JSONException {
+		super.sendMsgToWebView(command, data, receiver);
+	}
+	
+	@Override
+	@JavascriptInterface
+	public String getQueuedMessage(boolean wait) throws InterruptedException {
+		return super.getQueuedMessage(wait);
+	}
+	
+	@Override
+	@JavascriptInterface
+	public void sendReplyToDebugService(int replyId, String data) {
+		super.sendReplyToDebugService(replyId, data);
+	}
+	
+	@Override
+	@JavascriptInterface
+	public void sendToDebugService(String path, String data) {
+		super.sendToDebugService(path, data);
+	}
+	
+	
 }

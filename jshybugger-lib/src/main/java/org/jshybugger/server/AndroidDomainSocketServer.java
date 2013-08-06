@@ -9,20 +9,19 @@ import java.util.concurrent.Executors;
 
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
-import android.net.LocalSocketAddress;
 import android.util.Log;
 
 
 /**
- * The class DomainSocketServer creates an jshybugger_devtools_remote unix domain socket 
+ * The class AndroidDomainSocketServer creates an jshybugger_devtools_remote unix domain socket 
  * and forwards all traffic between this socket and the HTTP endpoint 8888. 
  * Inspired from the book "Internet 
  * programming with Java" by Svetlin Nakov. It is freeware. 
  * For more information: http://www.nakov.com/books/inetjava/ 
  */
-public class DomainSocketServer extends Thread {
+public class AndroidDomainSocketServer extends Thread implements DomainSocketServer {
 
-    private static final String TAG = "DomainSocketServer";
+    private static final String TAG = "AndroidDomainSocketServer";
 
 	/** The Constant DESTINATION_HOST. */
     public static final String DESTINATION_HOST = "127.0.0.1"; 
@@ -41,7 +40,7 @@ public class DomainSocketServer extends Thread {
      * @param domainSocketName Name of the domain socket
      * @throws IOException 
      */
-    public DomainSocketServer(String domainSocketName, int forwarPort) throws IOException {
+    public AndroidDomainSocketServer(String domainSocketName, int forwarPort) throws IOException {
     	this.forwarPort = forwarPort;
     	this.domainSocketName = (domainSocketName != null ? domainSocketName : "jshybugger") + "_devtools_remote";
 
@@ -134,7 +133,7 @@ public class DomainSocketServer extends Thread {
             try { 
                 // Connect to the destination server 
                 mServerSocket = new Socket( 
-                		DomainSocketServer.DESTINATION_HOST, 
+                		AndroidDomainSocketServer.DESTINATION_HOST, 
                 		forwarPort); 
      
                 // Turn on keep-alive for both the sockets 
@@ -147,7 +146,7 @@ public class DomainSocketServer extends Thread {
                 serverOut = mServerSocket.getOutputStream(); 
             } catch (IOException ioe) { 
             	Log.e(TAG, "Can not connect to " + 
-                		DomainSocketServer.DESTINATION_HOST + ":" + 
+                		AndroidDomainSocketServer.DESTINATION_HOST + ":" + 
                 		forwarPort); 
                 connectionBroken(); 
                 return; 

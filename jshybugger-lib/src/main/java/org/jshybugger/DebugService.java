@@ -20,6 +20,8 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jshybugger.server.AndroidDebugServer;
+import org.jshybugger.server.AndroidDebugSession;
 import org.jshybugger.server.DebugServer;
 import org.jshybugger.server.DebugSession;
 
@@ -85,8 +87,8 @@ public class DebugService extends Service {
 				domainSocketName = metaData.getString("domainSocketName") + "."; // fix because GUI truncates last character
 			}			
 			
-			DebugServer debugServer = new DebugServer( debugPort, domainSocketName );
-			debugSession = new DebugSession(this);
+			DebugServer debugServer = new AndroidDebugServer( debugPort, domainSocketName );
+			debugSession = new AndroidDebugSession(this);
 			
 			debugServer.exportSession(debugSession);
 		} catch (UnknownHostException e) {

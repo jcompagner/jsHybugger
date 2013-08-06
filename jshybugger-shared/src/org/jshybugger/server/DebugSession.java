@@ -22,17 +22,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-import org.jshybugger.DebugContentProvider;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONStringer;
 import org.webbitserver.BaseWebSocketHandler;
 import org.webbitserver.WebSocketConnection;
-
-import android.content.Context;
-import android.database.Cursor;
-import android.net.Uri;
-import android.util.Log;
 
 
 /**
@@ -41,14 +35,8 @@ import android.util.Log;
  */
 public class DebugSession extends BaseWebSocketHandler {
 
-	/** The Constant TAG. */
-	private static final String TAG = "DebugServer";
-	
 	/** The message handler list. */
-	private final HashMap<String,MessageHandler> HANDLERS = new HashMap<String,MessageHandler>(); 
-	
-	/** The application context. */
-	protected Context application;
+	protected final HashMap<String,MessageHandler> HANDLERS = new HashMap<String,MessageHandler>(); 
 	
 	/** The client connection list. */
 	private List<WebSocketConnection> connections = new ArrayList<WebSocketConnection>(); 		
@@ -56,8 +44,6 @@ public class DebugSession extends BaseWebSocketHandler {
 	/** The browser API interface. */
 	private BrowserInterface browserInterface;
 	
-	public final String PROVIDER_PROTOCOL;
-
 	private final String sessionId;
 	
 	
@@ -67,9 +53,7 @@ public class DebugSession extends BaseWebSocketHandler {
 	 * @param application the application context
 	 * @throws UnknownHostException the unknown host exception
 	 */
-	public DebugSession( Context application ) throws UnknownHostException {
-		this.application = application;
-		PROVIDER_PROTOCOL = DebugContentProvider.getProviderProtocol(application);
+	public DebugSession() throws UnknownHostException {
 		
 		MessageHandler msgHandler = new DebuggerMsgHandler(this);
 		HANDLERS.put(msgHandler.getObjectName(), msgHandler);
@@ -126,7 +110,7 @@ public class DebugSession extends BaseWebSocketHandler {
 					null);
 			
 		} catch (JSONException e) {
-			Log.e(TAG, "Notify ClientConnected failed", e);
+//			Log.e(TAG, "Notify ClientConnected failed", e);
 		}		
 		
 	}
@@ -183,7 +167,7 @@ public class DebugSession extends BaseWebSocketHandler {
 				sendHandlerMessage(message, method[0], allHandler);
 			}
 		} else {
-			Log.e(TAG, "sendMessage no handler found: " + handlerMethod);
+//			Log.e(TAG, "sendMessage no handler found: " + handlerMethod);
 		}
 	}
 	
@@ -225,26 +209,7 @@ public class DebugSession extends BaseWebSocketHandler {
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
 	public String loadScriptResourceById(String scriptUri, boolean encode) throws IOException {
-		
-		Log.d(TAG, "loadScriptResourceById: " + scriptUri);
-		
-		Cursor cursor = application.getContentResolver().query(Uri.parse(PROVIDER_PROTOCOL + scriptUri), 
-				new String[] { encode ? "scriptSourceEncoded" : "scriptSource" }, 
-				DebugContentProvider.ORIGNAL_SELECTION, 
-				null, 
-				null);
-		
-		String resourceContent=null;
-		if (cursor != null) {
-			if (cursor.moveToFirst()) {
-				resourceContent = cursor.getString(0);
-			}
-			cursor.close();
-		}
-		
-		Log.d(TAG, "loadScriptResourceById - length: " + (resourceContent != null ? resourceContent.length() : 0));
-		
-		return resourceContent;
+		return ""; // TODO should this method be abstract
 	}
 
 	public String getSessionId() {

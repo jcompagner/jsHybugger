@@ -93,7 +93,7 @@ public class DebugServer {
 	                    public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) {
 	                    	try {
 	                    		String host = request.header("Host");
-								JSONStringer res = new JSONStringer().array();
+								JSONStringer res = new JSONStringer();
 								
 								for (DebugSession dbgSession : debugSessions) {
 									
@@ -124,10 +124,15 @@ public class DebugServer {
 			}
 		});
 		
-		domainSocketServer = new DomainSocketServer(domainSocketName, debugPort);
+		domainSocketServer = createDomainSocketServer(domainSocketName, debugPort);
 
 		webServerThread.start();
 		domainSocketServer.start();
+	}
+	
+	protected DomainSocketServer createDomainSocketServer(String domainSocketName, int debugPort) throws IOException
+	{
+		return new SocketServer(domainSocketName, debugPort);
 	}
 
 	public void exportSession(DebugSession debugSession) throws InterruptedException {
