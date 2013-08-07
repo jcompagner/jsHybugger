@@ -75,7 +75,7 @@ window.JsHybugger = (function() {
 		   }
 		}
 		pushChannel.timeout = 30000;
-		pushChannel.open('GET', 'http://localhost:8889/jshybugger/pushChannel', true);
+		pushChannel.open('GET', 'http://localhost:8889/jshybugger/' + Math.random() + 'pushChannel', true);
 		pushChannel.send();
 	}
     
