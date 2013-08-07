@@ -6,6 +6,8 @@ Bundle-Version: 1.0.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
 Export-Package: org.jshybugger.instrumentation,
+ org.jshybugger.proxy,
+ org.jshybugger.server,
  org.mozilla.javascript,
  org.mozilla.javascript.annotations,
  org.mozilla.javascript.ast,
