@@ -33,7 +33,7 @@ import org.webbitserver.WebSocketConnection;
  * The DebugServer is the heart of the whole system. 
  * It's the mediator between the app webview and the debugging frontend.
  */
-public class DebugSession extends BaseWebSocketHandler {
+public abstract class DebugSession extends BaseWebSocketHandler {
 
 	/** The message handler list. */
 	protected final HashMap<String,MessageHandler> HANDLERS = new HashMap<String,MessageHandler>(); 
@@ -208,9 +208,7 @@ public class DebugSession extends BaseWebSocketHandler {
 	 * @return the file resource content 
 	 * @throws IOException Signals that an I/O exception has occurred.
 	 */
-	public String loadScriptResourceById(String scriptUri, boolean encode) throws IOException {
-		return ""; // TODO should this method be abstract
-	}
+	public abstract String loadScriptResourceById(String scriptUri, boolean encode) throws IOException;
 
 	public String getSessionId() {
 		return sessionId;
