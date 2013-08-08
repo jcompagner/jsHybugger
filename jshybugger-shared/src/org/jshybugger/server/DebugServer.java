@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.json.JSONException;
 import org.json.JSONStringer;
+import org.json.JSONWriter;
 import org.webbitserver.HttpControl;
 import org.webbitserver.HttpHandler;
 import org.webbitserver.HttpRequest;
@@ -91,7 +92,7 @@ public class DebugServer {
 	                    public void handleHttpRequest(HttpRequest request, HttpResponse response, HttpControl control) {
 	                    	try {
 	                    		String host = request.header("Host");
-								JSONStringer res = new JSONStringer();
+	                    		JSONWriter res = new JSONStringer().array();
 								
 								for (DebugSession dbgSession : debugSessions) {
 									
