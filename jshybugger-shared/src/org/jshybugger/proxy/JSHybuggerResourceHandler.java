@@ -68,8 +68,7 @@ class JSHybuggerResourceHandler implements HttpHandler {
 				this.browserInterface.sendReplyToDebugService(jsonReq.getInt("arg0"), jsonReq.getString("arg1"));
 
 			} else if (uri.endsWith("getQueuedMessage")) {
-				res.chunked();
-				
+
 				JSONObject jsonReq = new JSONObject(req.body());
 				this.browserInterface.getQueuedMessage(res, jsonReq.getBoolean("arg0"));
 				return;

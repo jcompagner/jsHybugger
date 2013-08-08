@@ -84,15 +84,29 @@ public class JSDInterface extends AbstractBrowserInterface {
 				@Override
 				public void run() {
 					try {
-						writeFinalChunk(res, JSDInterface.this.getQueuedMessage(true));
+						String queuedMessage = JSDInterface.this.getQueuedMessage(true);
+						if (queuedMessage != null) {
+							res.chunked();
+							writeFinalChunk(res, queuedMessage);
+						}
+						else {
+							res.end();
+						}
 					} catch (InterruptedException e) {
-						writeFinalChunk(res, null);
+						res.end();
 					}
 				}
 				
 			});
 		} else {
-			writeFinalChunk(res, super.getQueuedMessage(false));
+			String queuedMessage = super.getQueuedMessage(false);
+			if (queuedMessage != null) {
+				res.chunked();
+				writeFinalChunk(res, queuedMessage);
+			}
+			else {
+				res.end();
+			}
 		}
 	}
 
