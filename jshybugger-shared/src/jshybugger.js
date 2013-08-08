@@ -26,6 +26,7 @@ if (window['JsHybuggerConfig'] === undefined)
  */
 if (window['JsHybugger'] === undefined) {
 window.JsHybugger = (function() {
+
 	var THIS = this;
     var breakpoints = {};
     var breakpointsById = {};
@@ -96,8 +97,11 @@ window.JsHybugger = (function() {
 		   }
 		}
 		xmlObj.open ('POST', url + cmd, false);
-		xmlObj.send (stringifySafe(data));
-		
+		try {
+			xmlObj.send (stringifySafe(data));
+		} catch (e) {
+			console.log(e);
+		}
 		return response;
     }
     
@@ -1480,7 +1484,6 @@ window.JsHybugger = (function() {
     	// process messages here to make sure all breakpoints are set  
     	processMessages(false);
     };
-    
     
     // register on load event handler
     window.addEventListener("load", pageLoaded, false);
