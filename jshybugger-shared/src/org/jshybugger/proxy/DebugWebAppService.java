@@ -22,6 +22,10 @@ public class DebugWebAppService {
 		}
 		return instance;
 	}
+	
+	public static synchronized boolean isStarted() {
+		return instance.started;
+	}
 
 	private boolean started = false;
 	
