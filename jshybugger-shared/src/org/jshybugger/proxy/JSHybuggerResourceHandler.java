@@ -25,18 +25,26 @@ class JSHybuggerResourceHandler implements HttpHandler {
 	@Override
 	public void handleHttpRequest(HttpRequest req, HttpResponse res,
 			HttpControl control) throws Exception {
-		
+		res.header("Access-Control-Allow-Origin", "*");
+		res.header("Allow", "GET, DELETE, POST, PUT, OPTIONS");
 		if ("OPTIONS".equals(req.method()) ) {
-			res.header("Access-Control-Allow-Origin", req.header("Origin"));
-			res.header("Access-Control-Allow-Methods", "POST");
-			res.header("Access-Control-Allow-Headers", req.header("Access-Control-Request-Headers"));
+			res.header("Access-Control-Allow-Methods", "GET, DELETE, POST, PUT, OPTIONS");
+			String headers = req.header("Access-Control-Request-Headers");
+			if (headers == null)
+			{
+				headers = "Allow";
+			}
+			else if (!headers.contains("Allow"))
+			{
+				headers += ", Allow";
+			}
+			res.header("Access-Control-Allow-Headers", headers);
+			res.header("Access-Control-Expose-Headers", headers);
 			res.end();
-			
 		} else {
 		
 			String uri = req.uri();
 			//Log.d(TAG,  "START: " + req);
-			res.header("Access-Control-Allow-Origin", req.header("Origin"));
 			if (uri.endsWith("jshybugger.js")) {
 				res.header("Cache-control", "no-cache, no-store");
 				res.header("Expires", "0");
