@@ -14,6 +14,13 @@
  * limitations under the License.
  */
 
+if (window['JsHybuggerConfig'] === undefined)
+{
+	window.JsHybuggerConfig = {
+		endpoint: 'http://localhost:8889/jshybugger/'
+	};		
+}
+
 /* 
  * JsHybugger runtime library.
  */
@@ -38,6 +45,7 @@ window.JsHybugger = (function() {
 	var FRAME_ID = new String(new Date().getTime() % 3600000);
 	var PROTOCOL = 'content://jsHybugger.org/';
 	
+	var url = JsHybuggerConfig.endpoint;
 	
 	if (window['JsHybuggerNI'] === undefined) {
 		console.info("JsHybugger loaded outside a native app.")
@@ -75,7 +83,7 @@ window.JsHybugger = (function() {
 		   }
 		}
 		pushChannel.timeout = 30000;
-		pushChannel.open('GET', 'http://localhost:8889/jshybugger/' + Math.random() + 'pushChannel', true);
+		pushChannel.open('GET', url + Math.random() + 'pushChannel', true);
 		pushChannel.send();
 	}
     
@@ -87,7 +95,7 @@ window.JsHybugger = (function() {
 		      response = xmlObj.status == '200' && xmlObj.responseText && xmlObj.responseText.length > 0 ? xmlObj.responseText : null;
 		   }
 		}
-		xmlObj.open ('POST', 'http://localhost:8889/jshybugger/' + cmd, false);
+		xmlObj.open ('POST', url + cmd, false);
 		xmlObj.send (stringifySafe(data));
 		
 		return response;
