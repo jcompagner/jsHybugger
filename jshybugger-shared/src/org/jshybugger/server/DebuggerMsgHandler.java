@@ -112,7 +112,12 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 		} else if ("setBreakpointByUrl".equals(method)) {
 			
 			JSONObject params = message.getJSONObject("params");
-			setBreakpointByUrl(conn, message.getInt("id"), params.getString("url"), params.getInt("lineNumber"), params.getString("condition"), false);
+			if (params.has("url")) {
+				setBreakpointByUrl(conn, message.getInt("id"), params.getString("url"), params.getInt("lineNumber"), params.getString("condition"), false);
+			}
+			else if (params.has("urlRegex")) {
+				System.err.println(params);
+			}
 			
 		} else if ("setBreakpoint".equals(method)) {
 
@@ -369,7 +374,6 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 
 			@Override
 			public void onReply(JSONObject data) throws JSONException {
-				
 				conn.send(new JSONStringer().object()
 						.key("id").value(message.getInt("id")).key("result").object().endObject()
 					.endObject().toString());
