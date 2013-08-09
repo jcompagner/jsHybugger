@@ -163,7 +163,7 @@ public abstract class AbstractBrowserInterface implements BrowserInterface {
 	 * @throws InterruptedException the interrupted exception
 	 */
 //	@JavascriptInterface
-	public String getQueuedMessage(boolean wait) throws InterruptedException {
+	public String getQueuedMessage(boolean wait) {
 		synchronized (messageQueue) {
 			//Log.d(TAG, "getQueuedMessage");
 			syncQueueMode = wait;

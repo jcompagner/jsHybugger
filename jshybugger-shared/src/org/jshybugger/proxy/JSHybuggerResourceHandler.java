@@ -3,7 +3,6 @@ package org.jshybugger.proxy;
 import java.io.BufferedInputStream;
 import java.nio.ByteBuffer;
 
-import org.jshybugger.server.BrowserInterface;
 import org.jshybugger.server.DebugServer;
 import org.json.JSONObject;
 import org.webbitserver.HttpControl;
@@ -15,9 +14,6 @@ class JSHybuggerResourceHandler implements HttpHandler {
 
 	private final JSDInterface browserInterface;
 
-	/**
-	 * @param debugService
-	 */
 	JSHybuggerResourceHandler(JSDInterface browserInterface) {
 		this.browserInterface = browserInterface;
 	}
@@ -75,9 +71,7 @@ class JSHybuggerResourceHandler implements HttpHandler {
 				
 			} else if (uri.endsWith("pushChannel")) {
 
-				res.chunked();
 				this.browserInterface.openPushChannel(res);
-				//Log.d(TAG,  "END: " + req);
 				return;
 				
 			} else {

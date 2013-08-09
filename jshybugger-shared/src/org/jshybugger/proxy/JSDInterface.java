@@ -45,7 +45,7 @@ public class JSDInterface extends AbstractBrowserInterface {
 		synchronized (this) {
 			if (response != null) {
 			//	Log.d(TAG, "notifyBrowser(): " +response);
-				writeFinalChunk(response, "JsHybugger.processMessages(false);");
+				sendNotifyMessage(response, "JsHybugger.processMessages(false);");
 				response = null;
 			} else {
 				notifyBrowser = true;
@@ -58,7 +58,7 @@ public class JSDInterface extends AbstractBrowserInterface {
 		synchronized (this) {
 			if (notifyBrowser) {
 			//	Log.d(TAG, "notifyBrowser(openPushChannel): " + res);
-				writeFinalChunk(res, "JsHybugger.processMessages(false);");
+				sendNotifyMessage(res, "JsHybugger.processMessages(false);");
 				notifyBrowser=false;
 				response=null;
 			} else {
@@ -67,46 +67,37 @@ public class JSDInterface extends AbstractBrowserInterface {
 		}
 	}
 
-	private void writeFinalChunk(HttpResponse res, String data) {
-		//Log.d(TAG, "writeFinalChunk: " + data);
-		if (data != null) {
-			res.write(data);
+	private void sendNotifyMessage(HttpResponse res, String data) {
+		//Log.d(TAG, "sendNotifyMessage: " + data);
+		try {
+			if (data != null) {
+				res.status(200);
+				res.content(data);
+			} else {
+				res.status(204);
+			}
+	
+			res.end();
+		} catch (Exception e) {
+//			Log.w(TAG, "sendNotifyMessage failed. "  + e);
 		}
-		res.write("");
-		res.end();
 	}
 
-	public void getQueuedMessage(final HttpResponse res, final boolean wait) throws InterruptedException {
+	public void getQueuedMessage(final HttpResponse res, final boolean wait) {
 		if (wait) {
 		
 			executorService.execute(new Runnable() {
 
 				@Override
 				public void run() {
-					try {
-						String queuedMessage = JSDInterface.this.getQueuedMessage(true);
-						if (queuedMessage != null) {
-							res.chunked();
-							writeFinalChunk(res, queuedMessage);
-						}
-						else {
-							res.end();
-						}
-					} catch (InterruptedException e) {
-						res.end();
-					}
+					String queuedMessage = JSDInterface.this.getQueuedMessage(true);
+					sendNotifyMessage(res, queuedMessage);
 				}
 				
 			});
 		} else {
 			String queuedMessage = super.getQueuedMessage(false);
-			if (queuedMessage != null) {
-				res.chunked();
-				writeFinalChunk(res, queuedMessage);
-			}
-			else {
-				res.end();
-			}
+			sendNotifyMessage(res, queuedMessage);
 		}
 	}
 
