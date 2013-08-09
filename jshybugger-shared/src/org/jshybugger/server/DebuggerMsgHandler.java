@@ -371,7 +371,7 @@ public class DebuggerMsgHandler extends AbstractMsgHandler {
 			public void onReply(JSONObject data) throws JSONException {
 				
 				conn.send(new JSONStringer().object()
-						.key("id").value(message.getInt("id"))
+						.key("id").value(message.getInt("id")).key("result").object().endObject()
 					.endObject().toString());
 			}
 		});
