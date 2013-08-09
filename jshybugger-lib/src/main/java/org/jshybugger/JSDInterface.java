@@ -110,7 +110,7 @@ public class JSDInterface extends AbstractBrowserInterface {
 	
 	@Override
 	@JavascriptInterface
-	public String getQueuedMessage(boolean wait) throws InterruptedException {
+	public String getQueuedMessage(boolean wait){
 		return super.getQueuedMessage(wait);
 	}
 	
